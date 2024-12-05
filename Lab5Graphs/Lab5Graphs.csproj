@@ -8,4 +8,15 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="GraphX" Version="3.0.0" />
+    <PackageReference Include="Stride.GraphX.PCL.Logic" Version="2.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Elements.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
 </Project>
