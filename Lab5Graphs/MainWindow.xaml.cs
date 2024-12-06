@@ -344,14 +344,22 @@ namespace Lab5Graphs
         {
             GraphCanvas.Children.Clear();
 
+            double canvasWidth = GraphCanvas.ActualWidth;
+            double canvasHeight = GraphCanvas.ActualHeight;
+            double radius = Math.Min(canvasWidth, canvasHeight) / 3; // Радиус для размещения вершин
+            Point center = new Point(canvasWidth / 2, canvasHeight / 2); // Центр холста
 
             for (int i = 0; i < _graph.Vertices.Count; i++)
             {
                 var vertex = _graph.Vertices[i];
 
-
                 if (vertex.Container == null)
                 {
+                    // Вычисляем координаты для вершины
+                    double angle = 2 * Math.PI * i / _graph.Vertices.Count;
+                    double x = center.X + radius * Math.Cos(angle) - 25;
+                    double y = center.Y + radius * Math.Sin(angle) - 25;
+
                     // Создаем визуальные элементы только для новых вершин
                     Canvas vertexContainer = new Canvas
                     {
@@ -379,7 +387,6 @@ namespace Lab5Graphs
                             Width = 50,
                             TextAlignment = TextAlignment.Center,
                             VerticalAlignment = VerticalAlignment.Center
-
                         };
                         vertexContainer.Children.Add(vertexText);
                         Canvas.SetLeft(vertexText, 0);
@@ -391,42 +398,30 @@ namespace Lab5Graphs
                         vertexContainer.Children.Add(vertex.Text);
                         Canvas.SetLeft(vertex.Text, 0);
                         Canvas.SetTop(vertex.Text, 12.5);
-
                     }
 
-
-
+                    // Устанавливаем позицию контейнера на холсте
+                    Canvas.SetLeft(vertexContainer, x);
+                    Canvas.SetTop(vertexContainer, y);
 
                     GraphCanvas.Children.Add(vertexContainer);
                     vertex.Shape = vertexShape;
                     vertex.Container = vertexContainer;
 
-
-
-
                     vertexContainer.MouseLeftButtonDown += Vertex_MouseLeftButtonDown;
                     vertexContainer.MouseRightButtonDown += Vertex_MouseRightButtonDown;
                     vertexContainer.MouseRightButtonUp += Vertex_MouseRightButtonUp;
                     vertexContainer.MouseMove += Vertex_MouseMove;
-
                 }
                 else
                 {
-
                     // Existing vertex - restore visual elements
                     GraphCanvas.Children.Add(vertex.Container);
                 }
-
             }
-
-
-
-
-
 
             foreach (var edge in _graph.Edges)
             {
-
                 var startVertex = _graph.Vertices.FirstOrDefault(v => v.Id == edge.StartVertexId);
                 var endVertex = _graph.Vertices.FirstOrDefault(v => v.Id == edge.EndVertexId);
                 if (startVertex == null || endVertex == null) continue;
@@ -445,10 +440,6 @@ namespace Lab5Graphs
                     edge.Shape = edgeShape;
                 }
 
-
-
-
-
                 if (edge.WeightText == null)
                 {
                     TextBlock weightText = new TextBlock
@@ -457,33 +448,25 @@ namespace Lab5Graphs
                         FontSize = 12,
                         Foreground = Brushes.Black,
                         Background = Brushes.White,
+                        Padding = new Thickness(2),
                         Margin = new Thickness(0, -20, 0, 0)
                     };
                     edge.WeightText = weightText;
                 }
 
-
-
-
-
-
-                // Update edge coordinates
+                // Обновляем координаты рёбер
                 edge.Shape.X1 = Canvas.GetLeft(startVertex.Container) + 25;
                 edge.Shape.Y1 = Canvas.GetTop(startVertex.Container) + 25;
                 edge.Shape.X2 = Canvas.GetLeft(endVertex.Container) + 25;
                 edge.Shape.Y2 = Canvas.GetTop(endVertex.Container) + 25;
 
-
-
-
-
                 Canvas.SetLeft(edge.WeightText, (edge.Shape.X1 + edge.Shape.X2) / 2 - 10);
                 Canvas.SetTop(edge.WeightText, (edge.Shape.Y1 + edge.Shape.Y2) / 2 - 10);
 
-
-                if (!GraphCanvas.Children.Contains(edge.Shape)) GraphCanvas.Children.Add(edge.Shape);
-                if (!GraphCanvas.Children.Contains(edge.WeightText)) GraphCanvas.Children.Add(edge.WeightText);
-
+                if (!GraphCanvas.Children.Contains(edge.Shape))
+                    GraphCanvas.Children.Add(edge.Shape);
+                if (!GraphCanvas.Children.Contains(edge.WeightText))
+                    GraphCanvas.Children.Add(edge.WeightText);
             }
         }
 

@@ -50,8 +50,18 @@ namespace Lab5Graphs
         // Запись матрицы смежности в файл
         public void WriteAdjacencyMatrixToFile(string filePath)
         {
-            int[,] adjacencyMatrix = ToAdjacencyMatrix();
             int n = Vertices.Count;
+            int[,] adjacencyMatrix = new int[n, n];
+
+            foreach (var edge in Edges)
+            {
+                int startIndex = edge.StartVertexId - 1;
+                int endIndex = edge.EndVertexId - 1;
+                int weight = edge.Weight;
+
+                adjacencyMatrix[startIndex, endIndex] = weight;
+                adjacencyMatrix[endIndex, startIndex] = weight; // Так как граф неориентированный
+            }
 
             using (StreamWriter writer = new StreamWriter(filePath))
             {
@@ -66,6 +76,7 @@ namespace Lab5Graphs
             }
         }
 
+
         // Чтение матрицы смежности из файла и восстановление графа
         public void ReadAdjacencyMatrixFromFile(string filePath)
         {
@@ -78,30 +89,38 @@ namespace Lab5Graphs
             // Создаем вершины
             for (int i = 0; i < n; i++)
             {
-                Vertices.Add(new Vertex { Id = i + 1 });
+                Vertices.Add(new Vertex
+                {
+                    Id = i + 1,
+                    Shape = null,
+                    Container = null
+                });
             }
 
+            // Чтение и добавление рёбер
             for (int i = 0; i < n; i++)
             {
                 var values = lines[i].Split(' ');
                 for (int j = i; j < n; j++)
                 {
-                    if (int.Parse(values[j]) > 0) // Проверяем на существование ребра (вес > 0)
+                    int weight = int.Parse(values[j]);
+                    if (weight > 0)
                     {
+                        // Добавляем ребро с учетом веса
                         if (i != j)
                         {
                             Edges.Add(new Edge
                             {
                                 StartVertexId = i + 1,
                                 EndVertexId = j + 1,
-                                Weight = int.Parse(values[j]) // Добавляем вес ребра
+                                Weight = weight
                             });
                         }
-
                     }
                 }
             }
         }
+
 
         public void RemoveVertex(Vertex vertex)
         {
