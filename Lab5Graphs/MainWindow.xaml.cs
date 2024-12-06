@@ -5,7 +5,8 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System;
 using System.IO;
-using System.Collections.Generic;
+using System.Linq;
+
 
 namespace Lab5Graphs
 {
@@ -133,51 +134,94 @@ namespace Lab5Graphs
             if (_selectedVertex == null)
             {
                 _selectedVertex = clickedVertex;
-                clickedVertex.Shape.Stroke = Brushes.Red; // Подсвечиваем выбранную вершину
+                clickedVertex.Shape.Stroke = Brushes.Red; // Выделяем вершину
             }
             else
             {
-                // Создаем линию (ребро)
-                Line edgeShape = new Line
+                if (clickedVertex != _selectedVertex)
                 {
-                    Stroke = Brushes.Black,
-                    StrokeThickness = 2,
-                    X1 = Canvas.GetLeft(_selectedVertex.Container) + 25,
-                    Y1 = Canvas.GetTop(_selectedVertex.Container) + 25,
-                    X2 = Canvas.GetLeft(clickedVertex.Container) + 25,
-                    Y2 = Canvas.GetTop(clickedVertex.Container) + 25
-                };
+                    // Создаем линию (ребро)
+                    Line edgeShape = new Line
+                    {
+                        Stroke = Brushes.Black,
+                        StrokeThickness = 2,
+                        X1 = Canvas.GetLeft(_selectedVertex.Container) + 25,
+                        Y1 = Canvas.GetTop(_selectedVertex.Container) + 25,
+                        X2 = Canvas.GetLeft(clickedVertex.Container) + 25,
+                        Y2 = Canvas.GetTop(clickedVertex.Container) + 25
+                    };
 
-                // Добавляем ребро на холст
-                GraphCanvas.Children.Add(edgeShape);
+                    // Добавляем ребро на холст
+                    GraphCanvas.Children.Add(edgeShape);
 
-                // Создаем объект ребра и добавляем в граф
-                var edge = new Edge
-                {
-                    StartVertexId = _selectedVertex.Id,
-                    EndVertexId = clickedVertex.Id,
-                    Shape = edgeShape
-                };
-                _graph.Edges.Add(edge);
+                    // Создаем объект ребра и добавляем в граф
+                    var edge = new Edge
+                    {
+                        StartVertexId = _selectedVertex.Id,
+                        EndVertexId = clickedVertex.Id,
+                        Shape = edgeShape
+                    };
+                    _graph.Edges.Add(edge);
 
-                // Снимаем выделение
+                    // Перерисовываем граф для отображения веса ребра
+                    DrawGraph();
+                }
+
+                // Снимаем выделение с вершины в любом случае
                 _selectedVertex.Shape.Stroke = Brushes.Black;
                 _selectedVertex = null;
             }
         }
 
-        // Начало перетаскивания вершины правой кнопкой
+
+
+
         private void Vertex_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            _draggedVertex = _graph.Vertices.Find(v => v.Container == sender as Canvas);
-            if (_draggedVertex != null)
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
             {
-                _isDragging = true;
-                _dragStart = e.GetPosition(GraphCanvas);
+                _draggedVertex = _graph.Vertices.Find(v => v.Container == sender as Canvas);
+
+                if (_draggedVertex != null)
+                {
+                    _graph.RemoveVertex(_draggedVertex);
+                    GraphCanvas.Children.Remove(_draggedVertex.Container);
+                    foreach (Edge edge in _graph.Edges.ToList())
+                    {
+
+                        if (edge.Shape != null && (edge.StartVertexId == _draggedVertex.Id || edge.EndVertexId == _draggedVertex.Id))
+                        {
+                            GraphCanvas.Children.Remove(edge.Shape);
+
+                        }
+                        if (edge.WeightText != null && (edge.StartVertexId == _draggedVertex.Id || edge.EndVertexId == _draggedVertex.Id))
+                        {
+                            GraphCanvas.Children.Remove(edge.WeightText);
+
+                        }
+                    }
+
+
+                    DrawGraph();
+                    _draggedVertex = null;
+                }
+
+
             }
+            else
+            {
+                _draggedVertex = _graph.Vertices.Find(v => v.Container == sender as Canvas);
+                if (_draggedVertex != null)
+                {
+                    _isDragging = true;
+                    _dragStart = e.GetPosition(GraphCanvas);
+                }
+            }
+
         }
 
         // Завершение перетаскивания вершины правой кнопкой
+
         private void Vertex_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (_isDragging)
@@ -217,6 +261,12 @@ namespace Lab5Graphs
                         edge.Shape.X2 = newLeft + 25;
                         edge.Shape.Y2 = newTop + 25;
                     }
+
+                    if (edge.WeightText != null)
+                    {
+                        Canvas.SetLeft(edge.WeightText, (edge.Shape.X1 + edge.Shape.X2) / 2 - 10);
+                        Canvas.SetTop(edge.WeightText, (edge.Shape.Y1 + edge.Shape.Y2) / 2 - 10);
+                    }
                 }
             }
         }
@@ -237,6 +287,7 @@ namespace Lab5Graphs
             _isAddingEdge = false;
             _selectedVertex = null;
         }
+
 
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
@@ -260,103 +311,179 @@ namespace Lab5Graphs
             MessageBox.Show("Graph saved to " + filePath);
         }
 
+        private void GraphCanvas_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            // Проверяем, был ли клик на ребре
+            var clickedElement = e.OriginalSource as FrameworkElement;
+            var edge = _graph.Edges.FirstOrDefault(ed => ed.Shape == clickedElement || (ed.WeightText != null && ed.WeightText == clickedElement));
+            if (edge != null)
+            {
+                // Создаем контекстное меню
+                ContextMenu contextMenu = new ContextMenu();
+                MenuItem changeWeightItem = new MenuItem { Header = "Change Weight" };
+                contextMenu.Items.Add(changeWeightItem);
+
+                // Обработчик события выбора пункта меню
+                changeWeightItem.Click += (s, ea) =>
+                {
+                    string input = Microsoft.VisualBasic.Interaction.InputBox("Enter edge weight:", "Edge Weight", edge.Weight.ToString());
+                    if (int.TryParse(input, out int newWeight))
+                    {
+                        edge.Weight = newWeight;
+                        edge.WeightText.Text = newWeight.ToString();
+                    }
+                };
+
+                // Открываем контекстное меню
+                contextMenu.IsOpen = true;
+                e.Handled = true; // Prevents other MouseRightButtonDown events
+            }
+        }
+
         private void DrawGraph()
         {
             GraphCanvas.Children.Clear();
 
-            // Создаем фиксированную сетку координат для вершин, чтобы избежать наложений
-            double canvasWidth = GraphCanvas.ActualWidth;
-            double canvasHeight = GraphCanvas.ActualHeight;
-            int vertexCount = _graph.Vertices.Count;
-            double radius = Math.Min(canvasWidth, canvasHeight) / 3; // Радиус, на котором будут располагаться вершины
-            Point center = new Point(canvasWidth / 2, canvasHeight / 2); // Центр холста
 
-            // Создаем вершины и размещаем их равномерно по окружности
-            for (int i = 0; i < vertexCount; i++)
+            for (int i = 0; i < _graph.Vertices.Count; i++)
             {
-                double angle = 2 * Math.PI * i / vertexCount; // Угол для текущей вершины
-                double x = center.X + radius * Math.Cos(angle) - 25; // Координата X вершины
-                double y = center.Y + radius * Math.Sin(angle) - 25; // Координата Y вершины
-
-                // Создаем контейнер для вершины
-                Canvas vertexContainer = new Canvas
-                {
-                    Width = 50,
-                    Height = 50
-                };
-
-                // Создаем вершину (круг)
-                Ellipse vertexShape = new Ellipse
-                {
-                    Width = 50,
-                    Height = 50,
-                    Fill = Brushes.Transparent,
-                    Stroke = Brushes.Black,
-                    StrokeThickness = 2
-                };
-
-                // Создаем текстовое поле для названия вершины
-                TextBlock vertexText = new TextBlock
-                {
-                    Text = "V" + (i + 1),
-                    FontSize = 16,
-                    Foreground = Brushes.Black,
-                    Width = 50,
-                    TextAlignment = TextAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
-                };
-
-                // Добавляем элементы в контейнер вершины
-                vertexContainer.Children.Add(vertexShape);
-                vertexContainer.Children.Add(vertexText);
-                Canvas.SetLeft(vertexText, 0);
-                Canvas.SetTop(vertexText, 12.5); // Центрирование текста в круге
-
-                // Устанавливаем позицию контейнера на Canvas
-                Canvas.SetLeft(vertexContainer, x);
-                Canvas.SetTop(vertexContainer, y);
-
-                // Добавляем контейнер вершины на холст
-                GraphCanvas.Children.Add(vertexContainer);
-
-                // Обновляем объект вершины в графе
                 var vertex = _graph.Vertices[i];
-                vertex.Container = vertexContainer;
-                vertex.Shape = vertexShape;
-                vertex.Text = vertexText;
 
-                // Обработчики для взаимодействия
-                vertexContainer.MouseLeftButtonDown += Vertex_MouseLeftButtonDown;
-                vertexContainer.MouseRightButtonDown += Vertex_MouseRightButtonDown;
-                vertexContainer.MouseRightButtonUp += Vertex_MouseRightButtonUp;
-                vertexContainer.MouseMove += Vertex_MouseMove;
+
+                if (vertex.Container == null)
+                {
+                    // Создаем визуальные элементы только для новых вершин
+                    Canvas vertexContainer = new Canvas
+                    {
+                        Width = 50,
+                        Height = 50
+                    };
+
+                    Ellipse vertexShape = new Ellipse
+                    {
+                        Width = 50,
+                        Height = 50,
+                        Fill = Brushes.Transparent,
+                        Stroke = Brushes.Black,
+                        StrokeThickness = 2
+                    };
+                    vertexContainer.Children.Add(vertexShape);
+
+                    if (vertex.Text == null)
+                    {
+                        TextBlock vertexText = new TextBlock
+                        {
+                            Text = "V" + vertex.Id,
+                            FontSize = 16,
+                            Foreground = Brushes.Black,
+                            Width = 50,
+                            TextAlignment = TextAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center
+
+                        };
+                        vertexContainer.Children.Add(vertexText);
+                        Canvas.SetLeft(vertexText, 0);
+                        Canvas.SetTop(vertexText, 12.5);
+                        vertex.Text = vertexText;
+                    }
+                    else
+                    {
+                        vertexContainer.Children.Add(vertex.Text);
+                        Canvas.SetLeft(vertex.Text, 0);
+                        Canvas.SetTop(vertex.Text, 12.5);
+
+                    }
+
+
+
+
+                    GraphCanvas.Children.Add(vertexContainer);
+                    vertex.Shape = vertexShape;
+                    vertex.Container = vertexContainer;
+
+
+
+
+                    vertexContainer.MouseLeftButtonDown += Vertex_MouseLeftButtonDown;
+                    vertexContainer.MouseRightButtonDown += Vertex_MouseRightButtonDown;
+                    vertexContainer.MouseRightButtonUp += Vertex_MouseRightButtonUp;
+                    vertexContainer.MouseMove += Vertex_MouseMove;
+
+                }
+                else
+                {
+
+                    // Existing vertex - restore visual elements
+                    GraphCanvas.Children.Add(vertex.Container);
+                }
+
             }
 
-            // Создаем рёбра
+
+
+
+
+
             foreach (var edge in _graph.Edges)
             {
-                var startVertex = _graph.Vertices[edge.StartVertexId - 1];
-                var endVertex = _graph.Vertices[edge.EndVertexId - 1];
 
-                double x1 = Canvas.GetLeft(startVertex.Container) + 25;
-                double y1 = Canvas.GetTop(startVertex.Container) + 25;
-                double x2 = Canvas.GetLeft(endVertex.Container) + 25;
-                double y2 = Canvas.GetTop(endVertex.Container) + 25;
+                var startVertex = _graph.Vertices.FirstOrDefault(v => v.Id == edge.StartVertexId);
+                var endVertex = _graph.Vertices.FirstOrDefault(v => v.Id == edge.EndVertexId);
+                if (startVertex == null || endVertex == null) continue;
 
-                // Создаем линию (ребро)
-                Line edgeShape = new Line
+                if (edge.Shape == null)
                 {
-                    Stroke = Brushes.Black,
-                    StrokeThickness = 2,
-                    X1 = x1,
-                    Y1 = y1,
-                    X2 = x2,
-                    Y2 = y2
-                };
+                    Line edgeShape = new Line
+                    {
+                        Stroke = Brushes.Black,
+                        StrokeThickness = 2,
+                        X1 = Canvas.GetLeft(startVertex.Container) + 25,
+                        Y1 = Canvas.GetTop(startVertex.Container) + 25,
+                        X2 = Canvas.GetLeft(endVertex.Container) + 25,
+                        Y2 = Canvas.GetTop(endVertex.Container) + 25
+                    };
+                    edge.Shape = edgeShape;
+                }
 
-                // Добавляем линию на холст
-                GraphCanvas.Children.Add(edgeShape);
-                edge.Shape = edgeShape;
+
+
+
+
+                if (edge.WeightText == null)
+                {
+                    TextBlock weightText = new TextBlock
+                    {
+                        Text = edge.Weight.ToString(),
+                        FontSize = 12,
+                        Foreground = Brushes.Black,
+                        Background = Brushes.White,
+                        Margin = new Thickness(0, -20, 0, 0)
+                    };
+                    edge.WeightText = weightText;
+                }
+
+
+
+
+
+
+                // Update edge coordinates
+                edge.Shape.X1 = Canvas.GetLeft(startVertex.Container) + 25;
+                edge.Shape.Y1 = Canvas.GetTop(startVertex.Container) + 25;
+                edge.Shape.X2 = Canvas.GetLeft(endVertex.Container) + 25;
+                edge.Shape.Y2 = Canvas.GetTop(endVertex.Container) + 25;
+
+
+
+
+
+                Canvas.SetLeft(edge.WeightText, (edge.Shape.X1 + edge.Shape.X2) / 2 - 10);
+                Canvas.SetTop(edge.WeightText, (edge.Shape.Y1 + edge.Shape.Y2) / 2 - 10);
+
+
+                if (!GraphCanvas.Children.Contains(edge.Shape)) GraphCanvas.Children.Add(edge.Shape);
+                if (!GraphCanvas.Children.Contains(edge.WeightText)) GraphCanvas.Children.Add(edge.WeightText);
+
             }
         }
 

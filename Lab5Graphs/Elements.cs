@@ -1,9 +1,9 @@
 ﻿using System.Windows;
-using System;
 using System.Windows.Controls;
 using System.Windows.Shapes;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Lab5Graphs
 {
@@ -20,6 +20,8 @@ namespace Lab5Graphs
         public int StartVertexId { get; set; }
         public int EndVertexId { get; set; }
         public Line Shape { get; set; }
+        public TextBlock WeightText { get; set; }
+        public int Weight { get; set; } = 1;
     }
 
     public class Graph
@@ -35,11 +37,11 @@ namespace Lab5Graphs
 
             foreach (var edge in Edges)
             {
-                int startIndex = edge.StartVertexId - 1; // Идентификаторы начинаются с 1
+                int startIndex = edge.StartVertexId - 1;
                 int endIndex = edge.EndVertexId - 1;
 
-                adjacencyMatrix[startIndex, endIndex] = 1;
-                adjacencyMatrix[endIndex, startIndex] = 1; // Поскольку граф неориентированный
+                adjacencyMatrix[startIndex, endIndex] = edge.Weight; // Используем вес ребра
+                adjacencyMatrix[endIndex, startIndex] = edge.Weight; // Для неориентированного графа
             }
 
             return adjacencyMatrix;
@@ -76,34 +78,64 @@ namespace Lab5Graphs
             // Создаем вершины
             for (int i = 0; i < n; i++)
             {
-                Vertices.Add(new Vertex
-                {
-                    Id = i + 1,
-                    Shape = null, // Установим позже
-                    Container = null // Установим позже
-                });
+                Vertices.Add(new Vertex { Id = i + 1 });
             }
 
-            // Чтение и добавление рёбер
             for (int i = 0; i < n; i++)
             {
                 var values = lines[i].Split(' ');
                 for (int j = i; j < n; j++)
                 {
-                    if (int.Parse(values[j]) == 1)
+                    if (int.Parse(values[j]) > 0) // Проверяем на существование ребра (вес > 0)
                     {
-                        // Добавляем ребро (если граф неориентированный, не добавляем его дважды)
                         if (i != j)
                         {
                             Edges.Add(new Edge
                             {
                                 StartVertexId = i + 1,
-                                EndVertexId = j + 1
+                                EndVertexId = j + 1,
+                                Weight = int.Parse(values[j]) // Добавляем вес ребра
                             });
                         }
+
                     }
                 }
             }
         }
+
+        public void RemoveVertex(Vertex vertex)
+        {
+            Vertices.Remove(vertex);
+
+            Edges.RemoveAll(edge => edge.StartVertexId == vertex.Id || edge.EndVertexId == vertex.Id);
+
+
+            for (int i = 0; i < Vertices.Count; i++)
+            {
+                Vertices[i].Id = i + 1;
+                if (Vertices[i].Text != null) Vertices[i].Text.Text = "V" + (i + 1); // Обновляем текст вершины
+            }
+
+            // Обновляем ID в ребрах
+            foreach (var edge in Edges)
+            {
+
+                int startVertexIndex = Vertices.FindIndex(v => v.Id == edge.StartVertexId);
+                edge.StartVertexId = startVertexIndex + 1;
+
+
+                int endVertexIndex = Vertices.FindIndex(v => v.Id == edge.EndVertexId);
+                edge.EndVertexId = endVertexIndex + 1;
+            }
+
+        }
+
+
+        private Canvas FindVertexContainerById(int vertexId)
+        {
+            return Vertices.FirstOrDefault(v => v.Id == vertexId)?.Container;
+
+        }
+
     }
 }
