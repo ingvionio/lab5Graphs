@@ -10,6 +10,10 @@
         <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Background="Gray">
             <Button Name="AddEdgeButton" Content="Add Edge" Click="AddEdgeButton_Click" Margin="5"/>
             <Button Name="ClearButton" Content="Clear Canvas" Click="ClearButton_Click" Margin="5"/>
+            <Button x:Name="LoadButton" Content="Load Graph" Click="LoadButton_Click" Height="24" Width="71"/>
+            <Button x:Name="SaveButton" Content="Save Graph" Click="SaveButton_Click" Height="22" Width="81"/>
+            <TextBox x:Name="Path" Height="21" TextWrapping="Wrap" Text="Введите путь к файлу
+                     " Width="130" />
         </StackPanel>
     </Grid>
 </Window>

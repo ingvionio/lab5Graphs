@@ -3,6 +3,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System;
+using System.IO;
+using System.Collections.Generic;
 
 namespace Lab5Graphs
 {
@@ -234,5 +237,128 @@ namespace Lab5Graphs
             _isAddingEdge = false;
             _selectedVertex = null;
         }
+
+        private void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            string filePath = Path.Text;
+            if (File.Exists(filePath))
+            {
+                _graph.ReadAdjacencyMatrixFromFile(filePath);
+                DrawGraph();
+                MessageBox.Show("Graph loaded from " + filePath);
+            }
+            else
+            {
+                MessageBox.Show("File not found: " + filePath);
+            }
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            string filePath = Path.Text;
+            _graph.WriteAdjacencyMatrixToFile(filePath);
+            MessageBox.Show("Graph saved to " + filePath);
+        }
+
+        private void DrawGraph()
+        {
+            GraphCanvas.Children.Clear();
+
+            // Создаем фиксированную сетку координат для вершин, чтобы избежать наложений
+            double canvasWidth = GraphCanvas.ActualWidth;
+            double canvasHeight = GraphCanvas.ActualHeight;
+            int vertexCount = _graph.Vertices.Count;
+            double radius = Math.Min(canvasWidth, canvasHeight) / 3; // Радиус, на котором будут располагаться вершины
+            Point center = new Point(canvasWidth / 2, canvasHeight / 2); // Центр холста
+
+            // Создаем вершины и размещаем их равномерно по окружности
+            for (int i = 0; i < vertexCount; i++)
+            {
+                double angle = 2 * Math.PI * i / vertexCount; // Угол для текущей вершины
+                double x = center.X + radius * Math.Cos(angle) - 25; // Координата X вершины
+                double y = center.Y + radius * Math.Sin(angle) - 25; // Координата Y вершины
+
+                // Создаем контейнер для вершины
+                Canvas vertexContainer = new Canvas
+                {
+                    Width = 50,
+                    Height = 50
+                };
+
+                // Создаем вершину (круг)
+                Ellipse vertexShape = new Ellipse
+                {
+                    Width = 50,
+                    Height = 50,
+                    Fill = Brushes.Transparent,
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 2
+                };
+
+                // Создаем текстовое поле для названия вершины
+                TextBlock vertexText = new TextBlock
+                {
+                    Text = "V" + (i + 1),
+                    FontSize = 16,
+                    Foreground = Brushes.Black,
+                    Width = 50,
+                    TextAlignment = TextAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+
+                // Добавляем элементы в контейнер вершины
+                vertexContainer.Children.Add(vertexShape);
+                vertexContainer.Children.Add(vertexText);
+                Canvas.SetLeft(vertexText, 0);
+                Canvas.SetTop(vertexText, 12.5); // Центрирование текста в круге
+
+                // Устанавливаем позицию контейнера на Canvas
+                Canvas.SetLeft(vertexContainer, x);
+                Canvas.SetTop(vertexContainer, y);
+
+                // Добавляем контейнер вершины на холст
+                GraphCanvas.Children.Add(vertexContainer);
+
+                // Обновляем объект вершины в графе
+                var vertex = _graph.Vertices[i];
+                vertex.Container = vertexContainer;
+                vertex.Shape = vertexShape;
+                vertex.Text = vertexText;
+
+                // Обработчики для взаимодействия
+                vertexContainer.MouseLeftButtonDown += Vertex_MouseLeftButtonDown;
+                vertexContainer.MouseRightButtonDown += Vertex_MouseRightButtonDown;
+                vertexContainer.MouseRightButtonUp += Vertex_MouseRightButtonUp;
+                vertexContainer.MouseMove += Vertex_MouseMove;
+            }
+
+            // Создаем рёбра
+            foreach (var edge in _graph.Edges)
+            {
+                var startVertex = _graph.Vertices[edge.StartVertexId - 1];
+                var endVertex = _graph.Vertices[edge.EndVertexId - 1];
+
+                double x1 = Canvas.GetLeft(startVertex.Container) + 25;
+                double y1 = Canvas.GetTop(startVertex.Container) + 25;
+                double x2 = Canvas.GetLeft(endVertex.Container) + 25;
+                double y2 = Canvas.GetTop(endVertex.Container) + 25;
+
+                // Создаем линию (ребро)
+                Line edgeShape = new Line
+                {
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 2,
+                    X1 = x1,
+                    Y1 = y1,
+                    X2 = x2,
+                    Y2 = y2
+                };
+
+                // Добавляем линию на холст
+                GraphCanvas.Children.Add(edgeShape);
+                edge.Shape = edgeShape;
+            }
+        }
+
     }
 }
