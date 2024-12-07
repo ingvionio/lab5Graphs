@@ -3,9 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using System;
 using System.IO;
-using System.Linq;
 
 
 namespace Lab5Graphs
@@ -140,15 +138,21 @@ namespace Lab5Graphs
             {
                 if (clickedVertex != _selectedVertex)
                 {
+                    // Вычисляем точки на краях окружностей
+                    Point startCenter = new Point(Canvas.GetLeft(_selectedVertex.Container) + 25, Canvas.GetTop(_selectedVertex.Container) + 25);
+                    Point endCenter = new Point(Canvas.GetLeft(clickedVertex.Container) + 25, Canvas.GetTop(clickedVertex.Container) + 25);
+                    Point startEdge = GetEdgePoint(startCenter, endCenter, 25);
+                    Point endEdge = GetEdgePoint(endCenter, startCenter, 25);
+
                     // Создаем линию (ребро)
                     Line edgeShape = new Line
                     {
                         Stroke = Brushes.Black,
                         StrokeThickness = 2,
-                        X1 = Canvas.GetLeft(_selectedVertex.Container) + 25,
-                        Y1 = Canvas.GetTop(_selectedVertex.Container) + 25,
-                        X2 = Canvas.GetLeft(clickedVertex.Container) + 25,
-                        Y2 = Canvas.GetTop(clickedVertex.Container) + 25
+                        X1 = startEdge.X,
+                        Y1 = startEdge.Y,
+                        X2 = endEdge.X,
+                        Y2 = endEdge.Y
                     };
 
                     // Добавляем ребро на холст
@@ -426,20 +430,32 @@ namespace Lab5Graphs
                 var endVertex = _graph.Vertices.FirstOrDefault(v => v.Id == edge.EndVertexId);
                 if (startVertex == null || endVertex == null) continue;
 
+                Point startCenter = new Point(Canvas.GetLeft(startVertex.Container) + 25, Canvas.GetTop(startVertex.Container) + 25);
+                Point endCenter = new Point(Canvas.GetLeft(endVertex.Container) + 25, Canvas.GetTop(endVertex.Container) + 25);
+                Point startEdge = GetEdgePoint(startCenter, endCenter, 25);
+                Point endEdge = GetEdgePoint(endCenter, startCenter, 25);
+
                 if (edge.Shape == null)
                 {
                     Line edgeShape = new Line
                     {
                         Stroke = Brushes.Black,
                         StrokeThickness = 2,
-                        X1 = Canvas.GetLeft(startVertex.Container) + 25,
-                        Y1 = Canvas.GetTop(startVertex.Container) + 25,
-                        X2 = Canvas.GetLeft(endVertex.Container) + 25,
-                        Y2 = Canvas.GetTop(endVertex.Container) + 25
+                        X1 = startEdge.X,
+                        Y1 = startEdge.Y,
+                        X2 = endEdge.X,
+                        Y2 = endEdge.Y
                     };
                     edge.Shape = edgeShape;
                 }
 
+                // Обновляем координаты рёбер
+                edge.Shape.X1 = startEdge.X;
+                edge.Shape.Y1 = startEdge.Y;
+                edge.Shape.X2 = endEdge.X;
+                edge.Shape.Y2 = endEdge.Y;
+
+                // Создаём или обновляем текст веса
                 if (edge.WeightText == null)
                 {
                     TextBlock weightText = new TextBlock
@@ -448,18 +464,10 @@ namespace Lab5Graphs
                         FontSize = 12,
                         Foreground = Brushes.Black,
                         Background = Brushes.White,
-                        Padding = new Thickness(2),
-                        Margin = new Thickness(0, -20, 0, 0)
+                        Padding = new Thickness(2)
                     };
                     edge.WeightText = weightText;
                 }
-
-                // Обновляем координаты рёбер
-                edge.Shape.X1 = Canvas.GetLeft(startVertex.Container) + 25;
-                edge.Shape.Y1 = Canvas.GetTop(startVertex.Container) + 25;
-                edge.Shape.X2 = Canvas.GetLeft(endVertex.Container) + 25;
-                edge.Shape.Y2 = Canvas.GetTop(endVertex.Container) + 25;
-
                 Canvas.SetLeft(edge.WeightText, (edge.Shape.X1 + edge.Shape.X2) / 2 - 10);
                 Canvas.SetTop(edge.WeightText, (edge.Shape.Y1 + edge.Shape.Y2) / 2 - 10);
 
@@ -468,6 +476,188 @@ namespace Lab5Graphs
                 if (!GraphCanvas.Children.Contains(edge.WeightText))
                     GraphCanvas.Children.Add(edge.WeightText);
             }
+
+        }
+
+        private Point GetEdgePoint(Point center, Point target, double radius)
+        {
+            double dx = target.X - center.X;
+            double dy = target.Y - center.Y;
+            double distance = Math.Sqrt(dx * dx + dy * dy);
+
+            // Координаты точки пересечения
+            double x = center.X + dx * radius / distance;
+            double y = center.Y + dy * radius / distance;
+
+            return new Point(x, y);
+        }
+
+
+        private async Task DepthFirstSearchVisual(int startVertexId, TextBlock descriptionText, ListBox stackListBox)
+        {
+            // Сброс подсветки всех вершин
+            foreach (var vertex in _graph.Vertices)
+            {
+                vertex.Shape.Fill = Brushes.Transparent; // Исходный цвет вершин
+            }
+
+            // Сброс текста описания
+            descriptionText.Text = "Начинаем обход графа в глубину.\n";
+
+            // Инициализация стека
+            var stack = new Stack<Vertex>();
+            var visited = new HashSet<int>();
+
+            var startVertex = _graph.Vertices.FirstOrDefault(v => v.Id == startVertexId);
+            if (startVertex == null)
+            {
+                descriptionText.Text = "Стартовая вершина не найдена.";
+                return;
+            }
+
+            stack.Push(startVertex);
+            descriptionText.Text += $"Добавляем начальную вершину {startVertex.Text.Text} в стек.\n";
+
+            while (stack.Count > 0)
+            {
+                // Получаем текущую вершину
+                var currentVertex = stack.Pop();
+
+                // Обновляем состояние стека
+                stackListBox.Items.Clear();
+                foreach (var v in stack)
+                {
+                    stackListBox.Items.Add(v.Text.Text);
+                }
+
+                // Если вершина уже посещена, пропускаем её
+                if (visited.Contains(currentVertex.Id))
+                {
+                    descriptionText.Text += $"{currentVertex.Text.Text} уже была посещена, пропускаем.\n";
+                    continue;
+                }
+
+                // Помечаем вершину как посещенную
+                visited.Add(currentVertex.Id);
+                currentVertex.Shape.Fill = Brushes.Green; // Цвет для посещенной вершины
+                descriptionText.Text += $"Посещаем вершину {currentVertex.Text.Text}. Закрашиваем её в зелёный цвет.\n";
+
+                // Задержка для визуализации
+                await Task.Delay(500);
+
+                // Добавляем смежные вершины в стек
+                foreach (var edge in _graph.Edges.Where(e => e.StartVertexId == currentVertex.Id || e.EndVertexId == currentVertex.Id))
+                {
+                    var nextVertexId = edge.StartVertexId == currentVertex.Id ? edge.EndVertexId : edge.StartVertexId;
+
+                    if (!visited.Contains(nextVertexId))
+                    {
+                        var nextVertex = _graph.Vertices.FirstOrDefault(v => v.Id == nextVertexId);
+                        if (nextVertex != null)
+                        {
+                            stack.Push(nextVertex);
+                            nextVertex.Shape.Fill = Brushes.Yellow; // Цвет для текущей вершины в обработке
+                            descriptionText.Text += $"Добавляем вершину {nextVertex.Text.Text} в стек. Закрашиваем её в жёлтый цвет, так как она готова к обработке.\n";
+
+                            // Обновляем состояние стека
+                            stackListBox.Items.Insert(0, nextVertex.Text.Text);
+                            await Task.Delay(500);
+                        }
+                    }
+                }
+            }
+
+            descriptionText.Text += "Обход завершён. Все доступные вершины посещены.";
+        }
+
+
+        private async Task BreadthFirstSearchVisual(int startVertexId, TextBlock descriptionText, ListBox queueListBox)
+        {
+            // Сброс подсветки всех вершин
+            foreach (var vertex in _graph.Vertices)
+            {
+                vertex.Shape.Fill = Brushes.Transparent; // Исходный цвет вершин
+            }
+
+            // Сброс текста описания
+            descriptionText.Text = "Начинаем обход графа в ширину.\n";
+
+            // Инициализация очереди
+            var queue = new Queue<Vertex>();
+            var visited = new HashSet<int>();
+
+            var startVertex = _graph.Vertices.FirstOrDefault(v => v.Id == startVertexId);
+            if (startVertex == null)
+            {
+                descriptionText.Text = "Стартовая вершина не найдена.";
+                return;
+            }
+
+            queue.Enqueue(startVertex);
+            descriptionText.Text += $"Добавляем начальную вершину {startVertex.Text.Text} в очередь.\n";
+
+            while (queue.Count > 0)
+            {
+                // Получаем текущую вершину
+                var currentVertex = queue.Dequeue();
+
+                // Обновляем состояние очереди
+                queueListBox.Items.Clear();
+                foreach (var v in queue)
+                {
+                    queueListBox.Items.Add(v.Text.Text);
+                }
+
+                // Если вершина уже посещена, пропускаем её
+                if (visited.Contains(currentVertex.Id))
+                {
+                    descriptionText.Text += $"{currentVertex.Text.Text} уже была посещена, пропускаем.\n";
+                    continue;
+                }
+
+                // Помечаем вершину как посещённую
+                visited.Add(currentVertex.Id);
+                currentVertex.Shape.Fill = Brushes.Green; // Цвет для посещённой вершины
+                descriptionText.Text += $"Посещаем вершину {currentVertex.Text.Text}. Закрашиваем её в зелёный цвет.\n";
+
+                // Задержка для визуализации
+                await Task.Delay(500);
+
+                // Добавляем смежные вершины в очередь
+                foreach (var edge in _graph.Edges.Where(e => e.StartVertexId == currentVertex.Id || e.EndVertexId == currentVertex.Id))
+                {
+                    var nextVertexId = edge.StartVertexId == currentVertex.Id ? edge.EndVertexId : edge.StartVertexId;
+
+                    if (!visited.Contains(nextVertexId))
+                    {
+                        var nextVertex = _graph.Vertices.FirstOrDefault(v => v.Id == nextVertexId);
+                        if (nextVertex != null)
+                        {
+                            queue.Enqueue(nextVertex);
+                            nextVertex.Shape.Fill = Brushes.Yellow; // Цвет для текущей вершины в обработке
+                            descriptionText.Text += $"Добавляем вершину {nextVertex.Text.Text} в очередь. Закрашиваем её в жёлтый цвет, так как она готова к обработке.\n";
+
+                            // Обновляем состояние очереди
+                            queueListBox.Items.Add(nextVertex.Text.Text);
+                            await Task.Delay(500);
+                        }
+                    }
+                }
+            }
+
+            descriptionText.Text += "Обход завершён. Все доступные вершины посещены.";
+        }
+
+        private async void StartDFSButton_Click(object sender, RoutedEventArgs e)
+        {
+            int startVertexId = 1; // ID стартовой вершины
+            await DepthFirstSearchVisual(startVertexId, DescriptionTextBlock, ListBox);
+        }
+
+        private async void StartBFSButton_Click(object sender, RoutedEventArgs e)
+        {
+            int startVertexId = 1; // ID стартовой вершины
+            await BreadthFirstSearchVisual(startVertexId, DescriptionTextBlock, ListBox);
         }
 
     }

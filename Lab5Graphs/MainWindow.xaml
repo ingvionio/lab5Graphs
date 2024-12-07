@@ -1,16 +1,21 @@
-﻿<Window x:Class="Lab5Graphs.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Graph Editor" Height="600" Width="800">
+        xmlns:av="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="av" x:Class="Lab5Graphs.MainWindow"
+        Title="Graph Editor" Height="600" Width="917">
     <Grid>
-        <Canvas Name="GraphCanvas" Background="LightGray" MouseLeftButtonDown="Canvas_MouseLeftButtonDown" MouseRightButtonDown="GraphCanvas_MouseRightButtonDown" />
+        <Canvas x:Name="GraphCanvas" Background="LightGray" MouseLeftButtonDown="Canvas_MouseLeftButtonDown" MouseRightButtonDown="GraphCanvas_MouseRightButtonDown" Margin="0,0,145,0" />
 
         <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Background="Gray">
-            <Button Name="AddEdgeButton" Content="Add Edge" Click="AddEdgeButton_Click" Margin="5"/>
-            <Button Name="ClearButton" Content="Clear Canvas" Click="ClearButton_Click" Margin="5"/>
+            <Button x:Name="AddEdgeButton" Content="Add Edge" Click="AddEdgeButton_Click" Margin="5"/>
+            <Button x:Name="ClearButton" Content="Clear Canvas" Click="ClearButton_Click" Margin="5"/>
             <Button x:Name="LoadButton" Content="Load Graph" Click="LoadButton_Click" Height="24" Width="71"/>
             <Button x:Name="SaveButton" Content="Save Graph" Click="SaveButton_Click" Height="22" Width="81"/>
             <TextBox x:Name="Path" Height="21" TextWrapping="Wrap" Text="Введите путь к файлу" Width="130" />
+            <Button x:Name="StartDFSButton" Content="Start DFS" Click="StartDFSButton_Click" Width="109" Height="22"/>
+            <Button x:Name="StartBFSButton" Content="Start BFS" Click="StartBFSButton_Click" Width="109" Height="22"/>
         </StackPanel>
+        <ListBox x:Name="ListBox" Height="143" Width="134" av:ItemsSource="{av:SampleData ItemCount=5}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="777,30,0,0"/>
+        <TextBlock Height="402" x:Name="DescriptionTextBlock" TextWrapping="Wrap" Text="TextBlock" Width="130" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="779,182,0,0"/>
     </Grid>
 </Window>
