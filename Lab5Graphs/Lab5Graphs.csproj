@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="GraphX" Version="3.0.0" />
+    <PackageReference Include="MaterialDesignThemes" Version="5.1.0" />
     <PackageReference Include="Stride.GraphX.PCL.Logic" Version="2.4.0" />
   </ItemGroup>
 

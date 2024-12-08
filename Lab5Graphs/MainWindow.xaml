@@ -2,63 +2,81 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:Lab5Graphs"
         x:Class="Lab5Graphs.MainWindow"
         mc:Ignorable="d"
-        Title="Graph Editor" Height="600" Width="950"
-        MinHeight="400" MinWidth="600">
+        Title="Graph Editor" Height="668" Width="1000"
+        MinHeight="600" MinWidth="950"
+        WindowStartupLocation="CenterScreen">
+
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Teal" SecondaryColor="Lime" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="250"/>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="290"/>
         </Grid.ColumnDefinitions>
+
 
         <Canvas x:Name="GraphCanvas" Background="#EEEEEE" MouseLeftButtonDown="Canvas_MouseLeftButtonDown" MouseRightButtonDown="GraphCanvas_MouseRightButtonDown"/>
 
-        <Grid Grid.Column="1" Background="#F5F5F5" Margin="5">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
 
+        <materialDesign:Card Grid.Column="1"  Margin="5,5,5,5"  Background="#FAFAFA" >
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0*"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5">
-                <Button x:Name="AddEdgeButton" Content="Add Edge" Click="AddEdgeButton_Click" Margin="0,5,5,5" Padding="5" />
-                <Button x:Name="ClearButton" Content="Clear" Click="ClearButton_Click" Margin="0,5,5,5" Padding="5"/>
-            </StackPanel>
-
-
-            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
-                <Button x:Name="LoadButton" Content="Load" Click="LoadButton_Click" Width="110" Margin="0,5,5,5" Padding="5"/>
-                <Button x:Name="SaveButton" Content="Save" Click="SaveButton_Click" Width="110" Margin="0,5,5,5" Padding="5"/>
-            </StackPanel>
-
-            <GroupBox Grid.Row="3" Header="Algorithm" Margin="5">
-                <StackPanel>
-                    <ComboBox x:Name="AlgorithmComboBox" SelectionChanged="AlgorithmComboBox_SelectionChanged" Margin="5">
-                        <ComboBoxItem Content="Depth-First Search (DFS)"/>
-                        <!-- Algorithm 1 -->
-                        <ComboBoxItem Content="Breadth-First Search (BFS)"/>
-                        <!-- Algorithm 2 -->
-                    </ComboBox>
-                    <Button x:Name="StartAlgorithmButton" Content="Start Algorithm" Click="StartAlgorithmButton_Click" Margin="5,5,5,0" Padding="5" />
+                <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5,5,5,5" Grid.ColumnSpan="2">
+                    <Button x:Name="AddEdgeButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Add Edge" Click="AddEdgeButton_Click" Margin="0,5,5,5" Padding="5 5 5 5"/>
+                    <!-- Changed style -->
+                    <Button x:Name="ClearButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Clear" Click="ClearButton_Click" Margin="0,5,5,5" Padding="5 5 5 5"/>
+                    <!-- Changed style -->
                 </StackPanel>
-            </GroupBox>
 
-            <GroupBox Grid.Row="4" Header="Log" Margin="5">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <TextBlock x:Name="DescriptionTextBlock" TextWrapping="Wrap" Margin="5"/>
-                </ScrollViewer>
-            </GroupBox>
-            <GroupBox Grid.Row="5" Header="Stack/Queue" Margin="5">
-                <ListBox x:Name="ListBox"/>
-            </GroupBox>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5,5,5,5" Grid.ColumnSpan="2">
+                    <Button x:Name="LoadButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Load" Click="LoadButton_Click" Width="125" Margin="5,5,5,5" Padding="5 5 5 5"/>
+                    <Button x:Name="SaveButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Save" Click="SaveButton_Click" Width="125" Margin="5,5,5,5" Padding="5 5 5 5"/>
+                </StackPanel>
 
-        </Grid>
+
+                <GroupBox Grid.Row="2" Header="Algorithm" Margin="5,5,5,5" Style="{DynamicResource MaterialDesignGroupBox}" Grid.ColumnSpan="2">
+                    <StackPanel>
+                        <ComboBox x:Name="AlgorithmComboBox" materialDesign:HintAssist.Hint="Select Algorithm" Style="{StaticResource MaterialDesignFloatingHintComboBox}" SelectionChanged="AlgorithmComboBox_SelectionChanged" Margin="5" >
+                            <ComboBoxItem Content="Depth-First Search (DFS)"/>
+                            <ComboBoxItem Content="Breadth-First Search (BFS)"/>
+                        </ComboBox>
+                        <Button x:Name="StartAlgorithmButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Start Algorithm" Click="StartAlgorithmButton_Click" Margin="5,5,5,0" Padding="5 5 5 5"/>
+                        <!-- Changed style -->
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Grid.Row="3" Header="Log" Margin="5,5,5,5"  Style="{DynamicResource MaterialDesignGroupBox}" Grid.ColumnSpan="2" >
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" >
+                        <TextBlock x:Name="DescriptionTextBlock" TextWrapping="Wrap" FontSize="14"/>
+                    </ScrollViewer>
+                </GroupBox>
+
+                <GroupBox Grid.Row="4" Header="Stack/Queue" Margin="5,5,5,5" Style="{DynamicResource MaterialDesignGroupBox}" Grid.ColumnSpan="2">
+                    <ListBox x:Name="ListBox" FontSize="14"/>
+                </GroupBox>
+            </Grid>
+        </materialDesign:Card>
     </Grid>
 </Window>
