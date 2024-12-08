@@ -39,8 +39,10 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="2*"/>
+                    <!-- Log takes double the space -->
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
+                    <!-- Stack/Queue takes remaining space -->
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5,5,5,5" Grid.ColumnSpan="2">
@@ -61,9 +63,9 @@
                         <ComboBox x:Name="AlgorithmComboBox" materialDesign:HintAssist.Hint="Select Algorithm" Style="{StaticResource MaterialDesignFloatingHintComboBox}" SelectionChanged="AlgorithmComboBox_SelectionChanged" Margin="5" >
                             <ComboBoxItem Content="Depth-First Search (DFS)"/>
                             <ComboBoxItem Content="Breadth-First Search (BFS)"/>
+                            <ComboBoxItem Content="Minimum Spanning Tree (MST)"/>
                         </ComboBox>
                         <Button x:Name="StartAlgorithmButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Start Algorithm" Click="StartAlgorithmButton_Click" Margin="5,5,5,0" Padding="5 5 5 5"/>
-                        <!-- Changed style -->
                     </StackPanel>
                 </GroupBox>
 

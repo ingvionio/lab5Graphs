@@ -668,10 +668,11 @@ namespace Lab5Graphs
 
         private async void StartAlgorithmButton_Click(object sender, RoutedEventArgs e)
         {
-            int startVertexId = 1; // можно это разрешить это выбирать
+            ResetGraphVisualization();
+
+            int startVertexId = 1;
 
             string selectedAlgorithm = (string)(AlgorithmComboBox.SelectedItem as ComboBoxItem)?.Content;
-
 
             if (selectedAlgorithm == "Depth-First Search (DFS)")
             {
@@ -681,6 +682,89 @@ namespace Lab5Graphs
             {
                 await BreadthFirstSearchVisual(startVertexId, DescriptionTextBlock, ListBox);
             }
+            else if (selectedAlgorithm == "Minimum Spanning Tree (MST)")
+            {
+                await MinimumSpanningTreeVisual(DescriptionTextBlock); // Call the MST visualization
+            }
+        }
+
+        private async Task MinimumSpanningTreeVisual(TextBlock descriptionText)
+        {
+            descriptionText.Text = "Построение минимального остовного дерева (алгоритм Прима):\n\n";
+            descriptionText.Text += "Алгоритм Прима находит минимальное остовное дерево для связного взвешенного графа. \n";
+            descriptionText.Text += "Остовное дерево — это подграф, включающий все вершины исходного графа и являющийся деревом (т.е. не содержит циклов). \n";
+            descriptionText.Text += "Минимальное остовное дерево имеет наименьший суммарный вес ребер среди всех возможных остовных деревьев.\n\n";
+
+
+            List<Edge> mstEdges = _graph.FindMinimumSpanningTree();
+
+            if (mstEdges.Count < _graph.Vertices.Count - 1 && _graph.Vertices.Count > 0)
+            {
+                descriptionText.Text += "Граф несвязный! Невозможно построить остовное дерево.\n";
+                return;
+            }
+
+            descriptionText.Text += "Шаги алгоритма:\n";
+
+            HashSet<int> visitedVertices = new HashSet<int>();
+            visitedVertices.Add(_graph.Vertices[0].Id); // Начинаем с первой вершины
+            descriptionText.Text += $"1. Начинаем с вершины {_graph.Vertices[0].Text.Text}.\n";
+            await Task.Delay(500);
+
+            int stepCounter = 2;
+            while (visitedVertices.Count < _graph.Vertices.Count)
+            {
+                Edge minEdge = null;
+                foreach (var vertex in _graph.Vertices.Where(v => visitedVertices.Contains(v.Id)))
+                {
+                    foreach (var edge in _graph.Edges.Where(e => (e.StartVertexId == vertex.Id || e.EndVertexId == vertex.Id)))
+                    {
+                        int otherVertex = edge.StartVertexId == vertex.Id ? edge.EndVertexId : edge.StartVertexId;
+                        if (!visitedVertices.Contains(otherVertex))
+                        {
+                            if (minEdge == null || edge.Weight < minEdge.Weight)
+                            {
+                                minEdge = edge;
+                            }
+                        }
+                    }
+                }
+
+                if (minEdge != null)
+                {
+                    minEdge.Shape.Stroke = Brushes.Red; // Подсвечиваем ребро MST
+                    string startVertexName = _graph.Vertices.First(v => v.Id == minEdge.StartVertexId).Text.Text;
+                    string endVertexName = _graph.Vertices.First(v => v.Id == minEdge.EndVertexId).Text.Text;
+                    visitedVertices.Add(visitedVertices.Contains(minEdge.StartVertexId) ? minEdge.EndVertexId : minEdge.StartVertexId);
+
+                    descriptionText.Text += $"{stepCounter}. Из всех рёбер, соединяющих уже посещенные вершины с непосещенными, выбираем ребро с минимальным весом: ({startVertexName}, {endVertexName}).\n";
+                    await Task.Delay(500); // Задержка для визуализации
+                    stepCounter++;
+                }
+                else
+                {
+
+                    break; // Exit if no minEdge is found (for disconnected graphs)
+                }
+            }
+
+            descriptionText.Text += $"Минимальное остовное дерево построено (всего {mstEdges.Count} ребер).\n";
+        }
+
+        private void ResetGraphVisualization()
+        {
+            foreach (var vertex in _graph.Vertices)
+            {
+                vertex.Shape.Fill = Brushes.Transparent;
+            }
+
+            foreach (var edge in _graph.Edges)
+            {
+                edge.Shape.Stroke = Brushes.Black;
+            }
+
+            DescriptionTextBlock.Text = ""; // Clear log
+            ListBox.Items.Clear(); // Clear Stack/Queue display
 
         }
 

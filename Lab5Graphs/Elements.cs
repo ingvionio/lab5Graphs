@@ -149,11 +149,46 @@ namespace Lab5Graphs
 
         }
 
+        public List<Edge> FindMinimumSpanningTree()
+        {
+            // Prim's Algorithm implementation
+            List<Edge> mst = new List<Edge>();
+            HashSet<int> visitedVertices = new HashSet<int>();
+            List<Edge> eligibleEdges = new List<Edge>();
+
+            if (Vertices.Count == 0) return mst;
+
+
+            visitedVertices.Add(Vertices[0].Id);
+
+
+            eligibleEdges.AddRange(Edges.Where(e => e.StartVertexId == Vertices[0].Id || e.EndVertexId == Vertices[0].Id));
+
+            while (visitedVertices.Count < Vertices.Count && eligibleEdges.Count > 0)
+            {
+
+                eligibleEdges.Sort((e1, e2) => e1.Weight.CompareTo(e2.Weight));
+                Edge minEdge = eligibleEdges[0];
+                eligibleEdges.RemoveAt(0);
+
+                int nextVertexId = visitedVertices.Contains(minEdge.StartVertexId) ? minEdge.EndVertexId : minEdge.StartVertexId;
+
+                if (!visitedVertices.Contains(nextVertexId))
+                {
+                    mst.Add(minEdge);
+                    visitedVertices.Add(nextVertexId);
+                    eligibleEdges.AddRange(Edges.Where(e => (e.StartVertexId == nextVertexId || e.EndVertexId == nextVertexId) && !visitedVertices.Contains(e.StartVertexId == nextVertexId ? e.EndVertexId : e.StartVertexId)));
+                }
+            }
+
+
+            return mst;
+        }
+
 
         private Canvas FindVertexContainerById(int vertexId)
         {
             return Vertices.FirstOrDefault(v => v.Id == vertexId)?.Container;
-
         }
 
 
