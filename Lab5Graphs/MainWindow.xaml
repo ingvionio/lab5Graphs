@@ -40,16 +40,12 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="2*"/>
-                    <!-- Log takes double the space -->
                     <RowDefinition Height="*"/>
-                    <!-- Stack/Queue takes remaining space -->
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5,5,5,5" Grid.ColumnSpan="2">
                     <Button x:Name="AddEdgeButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Add Edge" Click="AddEdgeButton_Click" Margin="0,5,5,5" Padding="5 5 5 5"/>
-                    <!-- Changed style -->
                     <Button x:Name="ClearButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Clear" Click="ClearButton_Click" Margin="0,5,5,5" Padding="5 5 5 5"/>
-                    <!-- Changed style -->
                 </StackPanel>
 
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5,5,5,5" Grid.ColumnSpan="2">
