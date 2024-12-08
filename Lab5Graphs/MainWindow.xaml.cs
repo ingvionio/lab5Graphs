@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.IO;
+using Microsoft.Win32;
 
 
 namespace Lab5Graphs
@@ -295,24 +296,29 @@ namespace Lab5Graphs
 
         private void LoadButton_Click(object sender, RoutedEventArgs e)
         {
-            string filePath = Path.Text;
-            if (File.Exists(filePath))
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*"; // Set file filter
+
+            if (openFileDialog.ShowDialog() == true) // Show dialog and check if OK was clicked
             {
+                string filePath = openFileDialog.FileName;
                 _graph.ReadAdjacencyMatrixFromFile(filePath);
                 DrawGraph();
                 MessageBox.Show("Graph loaded from " + filePath);
-            }
-            else
-            {
-                MessageBox.Show("File not found: " + filePath);
             }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            string filePath = Path.Text;
-            _graph.WriteAdjacencyMatrixToFile(filePath);
-            MessageBox.Show("Graph saved to " + filePath);
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*"; // Set file filter
+
+            if (saveFileDialog.ShowDialog() == true) // Show dialog and check if OK was clicked
+            {
+                string filePath = saveFileDialog.FileName;
+                _graph.WriteAdjacencyMatrixToFile(filePath);
+                MessageBox.Show("Graph saved to " + filePath);
+            }
         }
 
         private void GraphCanvas_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -658,6 +664,31 @@ namespace Lab5Graphs
         {
             int startVertexId = 1; // ID стартовой вершины
             await BreadthFirstSearchVisual(startVertexId, DescriptionTextBlock, ListBox);
+        }
+
+        private async void StartAlgorithmButton_Click(object sender, RoutedEventArgs e)
+        {
+            int startVertexId = 1; // можно это разрешить это выбирать
+
+            string selectedAlgorithm = (string)(AlgorithmComboBox.SelectedItem as ComboBoxItem)?.Content;
+
+
+            if (selectedAlgorithm == "Depth-First Search (DFS)")
+            {
+                await DepthFirstSearchVisual(startVertexId, DescriptionTextBlock, ListBox);
+            }
+            else if (selectedAlgorithm == "Breadth-First Search (BFS)")
+            {
+                await BreadthFirstSearchVisual(startVertexId, DescriptionTextBlock, ListBox);
+            }
+
+        }
+
+        private void AlgorithmComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //Clear log when algorithm changes
+            DescriptionTextBlock.Text = "";
+
         }
 
     }
