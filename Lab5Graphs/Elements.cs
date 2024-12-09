@@ -191,6 +191,19 @@ namespace Lab5Graphs
             return Vertices.FirstOrDefault(v => v.Id == vertexId)?.Container;
         }
 
+        public int[,] ToCapacityMatrix()
+        {
+            int n = Vertices.Count;
+            int[,] capacityMatrix = new int[n, n];
 
+            foreach (var edge in Edges)
+            {
+                int startIndex = edge.StartVertexId - 1;
+                int endIndex = edge.EndVertexId - 1;
+                capacityMatrix[startIndex, endIndex] = edge.Weight;
+            }
+
+            return capacityMatrix;
+        }
     }
 }

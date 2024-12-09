@@ -654,6 +654,54 @@ namespace Lab5Graphs
             descriptionText.Text += "Обход завершён. Все доступные вершины посещены.";
         }
 
+        private async Task MaxFlowVisual(int source, int sink, TextBlock descriptionText, ListBox listBox)
+        {
+            int[,] capacityMatrix = _graph.ToCapacityMatrix();
+            MaxFlow maxFlowObj = new MaxFlow(capacityMatrix);
+            int n = capacityMatrix.GetLength(0);
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    maxFlowObj.residual[i, j] = maxFlowObj.capacity[i, j];
+                }
+            }
+
+            int maxFlow = 0;
+
+            while (maxFlowObj.BFS(source, sink))
+            {
+                int pathFlow = int.MaxValue;
+                for (int v = sink; v != source; v = maxFlowObj.parent[v])
+                {
+                    int u = maxFlowObj.parent[v];
+                    pathFlow = Math.Min(pathFlow, maxFlowObj.residual[u, v]);
+                }
+
+                for (int v = sink; v != source; v = maxFlowObj.parent[v])
+                {
+                    int u = maxFlowObj.parent[v];
+                    maxFlowObj.residual[u, v] -= pathFlow;
+                    maxFlowObj.residual[v, u] += pathFlow;
+
+                    // Визуализация изменения потока
+                    var edge = _graph.Edges.FirstOrDefault(e => (e.StartVertexId == u + 1 && e.EndVertexId == v + 1) || (e.StartVertexId == v + 1 && e.EndVertexId == u + 1));
+                    if (edge != null)
+                    {
+                        edge.Shape.Stroke = Brushes.Blue;
+                        edge.WeightText.Text = (edge.Weight - maxFlowObj.residual[u, v]).ToString();
+                        await Task.Delay(500);
+                    }
+                }
+
+                maxFlow += pathFlow;
+            }
+
+            descriptionText.Text += $"Максимальный поток: {maxFlow}\n";
+        }
+
+
         private async void StartDFSButton_Click(object sender, RoutedEventArgs e)
         {
             int startVertexId = 1; // ID стартовой вершины
@@ -685,6 +733,10 @@ namespace Lab5Graphs
             else if (selectedAlgorithm == "Minimum Spanning Tree (MST)")
             {
                 await MinimumSpanningTreeVisual(DescriptionTextBlock); // Call the MST visualization
+            }
+            else if (selectedAlgorithm == "Maximum Flow")
+            {
+                await MaxFlowVisual(0, _graph.Vertices.Count - 1, DescriptionTextBlock, ListBox);
             }
         }
 

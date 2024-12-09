@@ -60,6 +60,7 @@
                             <ComboBoxItem Content="Depth-First Search (DFS)"/>
                             <ComboBoxItem Content="Breadth-First Search (BFS)"/>
                             <ComboBoxItem Content="Minimum Spanning Tree (MST)"/>
+                            <ComboBoxItem Content="Maximum Flow"/>
                         </ComboBox>
                         <Button x:Name="StartAlgorithmButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Start Algorithm" Click="StartAlgorithmButton_Click" Margin="5,5,5,0" Padding="5 5 5 5"/>
                     </StackPanel>
