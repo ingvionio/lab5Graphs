@@ -673,11 +673,74 @@ namespace Lab5Graphs
             while (maxFlowObj.BFS(source, sink))
             {
                 int pathFlow = int.MaxValue;
+                Stack<int> path = new Stack<int>();
+                int v = sink;
+
+                // Идем от стока к источнику, чтобы найти минимальную пропускную способность
+                while (v != source)
+                {
+                    path.Push(v);
+                    int u = maxFlowObj.parent[v];
+                    pathFlow = Math.Min(pathFlow, maxFlowObj.residual[u, v]);
+                    v = u;
+                }
+                path.Push(source);
+
+                descriptionText.Text += $"Найден увеличивающий путь с пропускной способностью {pathFlow}\n";
+
+                // Идем от источника к стоку, чтобы обновить остаточные пропускные способности
+                while (path.Count > 1)
+                {
+                    int u = path.Pop();
+                    int w = path.Peek();
+                    maxFlowObj.residual[u, w] -= pathFlow;
+                    maxFlowObj.residual[w, u] += pathFlow;
+
+                    // Визуализация изменения потока
+                    var edge = _graph.Edges.FirstOrDefault(e => (e.StartVertexId == u + 1 && e.EndVertexId == w + 1) || (e.StartVertexId == w + 1 && e.EndVertexId == u + 1));
+                    if (edge != null)
+                    {
+                        edge.Shape.Stroke = Brushes.Blue;
+                        edge.WeightText.Text = (edge.Weight - maxFlowObj.residual[u, w]).ToString();
+                        descriptionText.Text += $"Обновляем ребро ({u + 1}, {w + 1}) с новым остаточным потоком {edge.Weight - maxFlowObj.residual[u, w]}\n";
+                        await Task.Delay(500);
+                    }
+                }
+
+                maxFlow += pathFlow;
+                descriptionText.Text += $"Текущий максимальный поток: {maxFlow}\n";
+            }
+
+            descriptionText.Text += $"Максимальный поток: {maxFlow}\n";
+        }
+
+        /*
+         private async Task MaxFlowVisual(int source, int sink, TextBlock descriptionText, ListBox listBox)
+        {
+            int[,] capacityMatrix = _graph.ToCapacityMatrix();
+            MaxFlow maxFlowObj = new MaxFlow(capacityMatrix);
+            int n = capacityMatrix.GetLength(0);
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    maxFlowObj.residual[i, j] = maxFlowObj.capacity[i, j];
+                }
+            }
+
+            int maxFlow = 0;
+
+            while (maxFlowObj.BFS(source, sink))
+            {
+                int pathFlow = int.MaxValue;
                 for (int v = sink; v != source; v = maxFlowObj.parent[v])
                 {
                     int u = maxFlowObj.parent[v];
                     pathFlow = Math.Min(pathFlow, maxFlowObj.residual[u, v]);
                 }
+
+                descriptionText.Text += $"Найден увеличивающий путь с пропускной способностью {pathFlow}\n";
 
                 for (int v = sink; v != source; v = maxFlowObj.parent[v])
                 {
@@ -691,16 +754,17 @@ namespace Lab5Graphs
                     {
                         edge.Shape.Stroke = Brushes.Blue;
                         edge.WeightText.Text = (edge.Weight - maxFlowObj.residual[u, v]).ToString();
+                        descriptionText.Text += $"Обновляем ребро ({u + 1}, {v + 1}) с новым остаточным потоком {edge.Weight - maxFlowObj.residual[u, v]}\n";
                         await Task.Delay(500);
                     }
                 }
 
                 maxFlow += pathFlow;
+                descriptionText.Text += $"Текущий максимальный поток: {maxFlow}\n";
             }
 
             descriptionText.Text += $"Максимальный поток: {maxFlow}\n";
-        }
-
+        }*/
 
         private async void StartDFSButton_Click(object sender, RoutedEventArgs e)
         {
