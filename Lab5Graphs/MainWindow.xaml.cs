@@ -11,6 +11,10 @@ namespace Lab5Graphs
 {
     public partial class MainWindow : Window
     {
+        private Vertex _startVertexForPath; // Стартовая вершина для кратчайшего пути
+        private Vertex _endVertexForPath;   // Конечная вершина для кратчайшего пути
+        private bool _isSelectingShortestPath = false; // Режим выбора вершин
+
         private readonly Graph _graph = new Graph();
         private bool _isAddingEdge = false;
         private Vertex _selectedVertex = null;
@@ -129,6 +133,26 @@ namespace Lab5Graphs
             if (!_isAddingEdge) return;
 
             var clickedVertex = _graph.Vertices.Find(v => v.Container == sender as Canvas);
+
+            if (_isSelectingShortestPath)
+            {
+                if (_startVertexForPath == null)
+                {
+                    _startVertexForPath = clickedVertex;
+                    _startVertexForPath.Shape.Fill = Brushes.LightGreen; // Выделяем начальную вершину
+                    DescriptionTextBlock.Text = $"Начальная вершина выбрана: {_startVertexForPath.Text.Text}. Теперь выберите конечную вершину.";
+                }
+                else if (_endVertexForPath == null)
+                {
+                    _endVertexForPath = clickedVertex;
+                    _endVertexForPath.Shape.Fill = Brushes.LightCoral; // Выделяем конечную вершину
+                    DescriptionTextBlock.Text = $"Конечная вершина выбрана: {_endVertexForPath.Text.Text}. Запускаем поиск...";
+
+                    // Запускаем алгоритм поиска кратчайшего пути
+                    StartShortestPath();
+                }
+                return;
+            }
 
             if (_selectedVertex == null)
             {
@@ -766,17 +790,130 @@ namespace Lab5Graphs
             descriptionText.Text += $"Максимальный поток: {maxFlow}\n";
         }*/
 
-        private async void StartDFSButton_Click(object sender, RoutedEventArgs e)
+        private async void StartShortestPath()
         {
-            int startVertexId = 1; // ID стартовой вершины
-            await DepthFirstSearchVisual(startVertexId, DescriptionTextBlock, ListBox);
+            if (_startVertexForPath == null || _endVertexForPath == null)
+            {
+                MessageBox.Show("Выберите начальную и конечную вершины.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            int startVertexId = _startVertexForPath.Id;
+            int endVertexId = _endVertexForPath.Id;
+
+            await ShortestPathVisual(startVertexId, endVertexId, DescriptionTextBlock, ListBox);
+
+            // Сброс режима выбора
+            _isSelectingShortestPath = false;
+            _startVertexForPath = null;
+            _endVertexForPath = null;
         }
 
-        private async void StartBFSButton_Click(object sender, RoutedEventArgs e)
+        private async Task ShortestPathVisual(int startVertexId, int endVertexId, TextBlock descriptionText, ListBox listBox)
         {
-            int startVertexId = 1; // ID стартовой вершины
-            await BreadthFirstSearchVisual(startVertexId, DescriptionTextBlock, ListBox);
+            // Сброс подсветки всех вершин и рёбер
+            ResetGraphVisualization();
+
+            int n = _graph.Vertices.Count;
+            if (startVertexId < 1 || startVertexId > n || endVertexId < 1 || endVertexId > n)
+            {
+                descriptionText.Text = "Неверные идентификаторы стартовой или конечной вершины.";
+                return;
+            }
+
+            descriptionText.Text = "Начинаем поиск кратчайшего пути (алгоритм Дейкстры):\n";
+
+            // Инициализация данных
+            var distances = new int[n + 1];
+            var previous = new int[n + 1];
+            var visited = new HashSet<int>();
+            var priorityQueue = new SortedSet<(int distance, int vertex)>();
+
+            for (int i = 1; i <= n; i++)
+            {
+                distances[i] = int.MaxValue;
+                previous[i] = -1;
+            }
+            distances[startVertexId] = 0;
+            priorityQueue.Add((0, startVertexId));
+
+            // Показать начальное состояние
+            descriptionText.Text += $"Начальная вершина: {_graph.Vertices[startVertexId - 1].Text.Text}.\n";
+            await Task.Delay(1000);
+
+            while (priorityQueue.Count > 0)
+            {
+                // Извлекаем вершину с минимальным расстоянием
+                var (currentDistance, currentVertex) = priorityQueue.Min;
+                priorityQueue.Remove(priorityQueue.Min);
+                visited.Add(currentVertex);
+
+                var currentVertexObj = _graph.Vertices[currentVertex - 1];
+                currentVertexObj.Shape.Fill = Brushes.LightGreen; // Подсвечиваем текущую вершину
+                descriptionText.Text += $"Посещаем вершину {currentVertexObj.Text.Text} с текущим расстоянием {currentDistance}.\n";
+                await Task.Delay(1000);
+
+                if (currentVertex == endVertexId)
+                {
+                    descriptionText.Text += "Конечная вершина достигнута. Останавливаем поиск.\n";
+                    break;
+                }
+
+                // Обновляем расстояния до соседей
+                foreach (var edge in _graph.Edges.Where(e => e.StartVertexId == currentVertex || e.EndVertexId == currentVertex))
+                {
+                    int neighbor = edge.StartVertexId == currentVertex ? edge.EndVertexId : edge.StartVertexId;
+                    if (visited.Contains(neighbor)) continue;
+
+                    var neighborVertexObj = _graph.Vertices[neighbor - 1];
+                    int newDistance = distances[currentVertex] + edge.Weight;
+
+                    if (newDistance < distances[neighbor])
+                    {
+                        // Обновляем расстояния
+                        priorityQueue.Remove((distances[neighbor], neighbor));
+                        distances[neighbor] = newDistance;
+                        previous[neighbor] = currentVertex;
+                        priorityQueue.Add((newDistance, neighbor));
+
+                        neighborVertexObj.Shape.Fill = Brushes.Yellow; // Подсвечиваем вершину, для которой обновляем расстояние
+                        descriptionText.Text += $"Обновляем расстояние до вершины {neighborVertexObj.Text.Text}: {newDistance}.\n";
+                        descriptionText.Text += $"Путь: {_graph.Vertices[currentVertex - 1].Text.Text} -> {neighborVertexObj.Text.Text}.\n";
+
+                        // Подсвечиваем соответствующее ребро
+                        edge.Shape.Stroke = Brushes.Blue;
+                        await Task.Delay(1000);
+                    }
+                }
+            }
+
+            // Восстанавливаем путь
+            if (previous[endVertexId] == -1)
+            {
+                descriptionText.Text += "Путь до конечной вершины не существует.\n";
+                return;
+            }
+
+            descriptionText.Text += "\nВосстанавливаем кратчайший путь:\n";
+            var path = new List<int>();
+            for (int at = endVertexId; at != -1; at = previous[at])
+            {
+                path.Add(at);
+            }
+            path.Reverse();
+
+            foreach (int vertexId in path)
+            {
+                var vertex = _graph.Vertices[vertexId - 1];
+                vertex.Shape.Fill = Brushes.LightBlue; // Подсвечиваем путь
+                descriptionText.Text += $"{vertex.Text.Text} ";
+                await Task.Delay(1000);
+            }
+
+            descriptionText.Text += "\nПоиск завершён.";
         }
+
+
 
         private async void StartAlgorithmButton_Click(object sender, RoutedEventArgs e)
         {
@@ -801,6 +938,10 @@ namespace Lab5Graphs
             else if (selectedAlgorithm == "Maximum Flow")
             {
                 await MaxFlowVisual(0, _graph.Vertices.Count - 1, DescriptionTextBlock, ListBox);
+            }
+            else if (selectedAlgorithm == "Shortest Path")
+            {
+                StartShortestPath();
             }
         }
 
@@ -879,6 +1020,9 @@ namespace Lab5Graphs
                 edge.Shape.Stroke = Brushes.Black;
             }
 
+            _startVertexForPath = null;
+            _endVertexForPath = null;
+
             DescriptionTextBlock.Text = ""; // Clear log
             ListBox.Items.Clear(); // Clear Stack/Queue display
 
@@ -887,8 +1031,22 @@ namespace Lab5Graphs
         private void AlgorithmComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             //Clear log when algorithm changes
-            DescriptionTextBlock.Text = "";
+            
+            ResetGraphVisualization();
 
+            string selectedAlgorithm = (string)(AlgorithmComboBox.SelectedItem as ComboBoxItem)?.Content;
+            if (selectedAlgorithm == "Shortest Path")
+            {
+                _isSelectingShortestPath = true;
+                DescriptionTextBlock.Text = "Выберите начальную и конечную вершины для поиска кратчайшего пути.";
+            }
+            else
+            {
+                DescriptionTextBlock.Text = "";
+                _isSelectingShortestPath = false;
+                _startVertexForPath = null;
+                _endVertexForPath = null;
+            }
         }
 
     }
