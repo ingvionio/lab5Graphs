@@ -4,6 +4,7 @@ using System.Windows.Shapes;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Media;
 
 namespace Lab5Graphs
 {
@@ -233,6 +234,65 @@ namespace Lab5Graphs
             }
 
             return capacityMatrix;
+        }
+        public void WriteCapacityMatrixToFile(string filePath, int[,] matrix)
+        {
+            int n = Vertices.Count;
+            int[,] capacityMatrix = matrix;
+
+            using (StreamWriter writer = new StreamWriter(filePath))
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    for (int j = 0; j < n; j++)
+                    {
+                        writer.Write(capacityMatrix[i, j] + (j == n - 1 ? "" : " "));
+                    }
+                    writer.WriteLine();
+                }
+            }
+        }
+        public void ReadCapacityMatrixFromFile(string filePath)
+        {
+            var lines = File.ReadAllLines(filePath);
+            int n = lines.Length;
+
+            Vertices.Clear();
+            Edges.Clear();
+
+            // Создаем вершины
+            for (int i = 0; i < n; i++)
+            {
+                Vertices.Add(new Vertex
+                {
+                    Id = i + 1,
+                    Shape = null,
+                    Container = null
+                });
+            }
+
+            // Чтение и добавление рёбер
+            for (int i = 0; i < n; i++)
+            {
+                var values = lines[i].Split(' ');
+                for (int j = 0; j < n; j++)
+                {
+                    int weight = int.Parse(values[j]);
+                    if (weight > 0)
+                    {
+                        // Добавляем ребро с учетом веса
+                        if (i != j)
+                        {
+                            Edges.Add(new Edge
+                            {
+                                StartVertexId = i + 1,
+                                EndVertexId = j + 1,
+                                Weight = weight
+                            });
+                        }
+                    }
+                }
+            }
         }
     }
 }

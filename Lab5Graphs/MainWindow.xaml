@@ -52,6 +52,7 @@
                     <ComboBox x:Name="SaveGraphTypeComboBox" materialDesign:HintAssist.Hint="Select graph type to save" Style="{StaticResource MaterialDesignFloatingHintComboBox}" Width="125" Margin="5,5,5,5" SelectedIndex="0">
                         <ComboBoxItem Content="Normal Graph"/>
                         <ComboBoxItem Content="MST"/>
+                        <ComboBoxItem Content="Max Flow"/>
                     </ComboBox>
                     <Button x:Name="LoadButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Load" Click="LoadButton_Click" Width="64" Margin="0,5,5,5" Padding="5"/>
                     <Button x:Name="SaveButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Save" Click="SaveButton_Click" Width="64" Margin="0,5,5,5" Padding="5"/>

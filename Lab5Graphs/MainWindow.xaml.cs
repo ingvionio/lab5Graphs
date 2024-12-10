@@ -327,9 +327,19 @@ namespace Lab5Graphs
             if (openFileDialog.ShowDialog() == true) // Show dialog and check if OK was clicked
             {
                 string filePath = openFileDialog.FileName;
-                _graph.ReadAdjacencyMatrixFromFile(filePath);
-                DrawGraph();
-                MessageBox.Show("Graph loaded from " + filePath);
+                MessageBoxResult result = MessageBox.Show("Загружаемый граф направленный?", "Info", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    _graph.ReadCapacityMatrixFromFile(filePath);
+                    DrawGraph();
+                    MessageBox.Show("Graph loaded from " + filePath);
+                }
+                else
+                {
+                    _graph.ReadAdjacencyMatrixFromFile(filePath);
+                    DrawGraph();
+                    MessageBox.Show("Graph loaded from " + filePath);
+                }
             }
         }
 
@@ -353,6 +363,15 @@ namespace Lab5Graphs
                     }
                     _graph.SaveMSTToFile(filePath, _mstEdges); // Save MST to file
 
+                }
+                else if(selectedGraphType == "Max Flow")
+                {
+                    if(_graph.Edges == null)
+                    {
+                        MessageBox.Show("Сначала постройте граф.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                    _graph.WriteCapacityMatrixToFile(filePath, _graph.ToCapacityMatrix());
                 }
                 else
                 {
@@ -757,57 +776,31 @@ namespace Lab5Graphs
             descriptionText.Text += $"Максимальный поток: {maxFlow}\n";
         }
 
-        /*
-         private async Task MaxFlowVisual(int source, int sink, TextBlock descriptionText, ListBox listBox)
+        private void ConvertEdgesToArrows()
         {
-            int[,] capacityMatrix = _graph.ToCapacityMatrix();
-            MaxFlow maxFlowObj = new MaxFlow(capacityMatrix);
-            int n = capacityMatrix.GetLength(0);
-
-            for (int i = 0; i < n; i++)
+            foreach (var edge in _graph.Edges)
             {
-                for (int j = 0; j < n; j++)
+                // Удаление старой линии
+                GraphCanvas.Children.Remove(edge.Shape);
+
+                // Создание новой стрелочки
+                Line arrow = new Line
                 {
-                    maxFlowObj.residual[i, j] = maxFlowObj.capacity[i, j];
-                }
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 2,
+                    X1 = edge.Shape.X1,
+                    Y1 = edge.Shape.Y1,
+                    X2 = edge.Shape.X2,
+                    Y2 = edge.Shape.Y2
+                };
+
+                // Добавление стрелочки на холст
+                GraphCanvas.Children.Add(arrow);
+
+                // Обновление объекта Edge
+                edge.Shape = arrow;
             }
-
-            int maxFlow = 0;
-
-            while (maxFlowObj.BFS(source, sink))
-            {
-                int pathFlow = int.MaxValue;
-                for (int v = sink; v != source; v = maxFlowObj.parent[v])
-                {
-                    int u = maxFlowObj.parent[v];
-                    pathFlow = Math.Min(pathFlow, maxFlowObj.residual[u, v]);
-                }
-
-                descriptionText.Text += $"Найден увеличивающий путь с пропускной способностью {pathFlow}\n";
-
-                for (int v = sink; v != source; v = maxFlowObj.parent[v])
-                {
-                    int u = maxFlowObj.parent[v];
-                    maxFlowObj.residual[u, v] -= pathFlow;
-                    maxFlowObj.residual[v, u] += pathFlow;
-
-                    // Визуализация изменения потока
-                    var edge = _graph.Edges.FirstOrDefault(e => (e.StartVertexId == u + 1 && e.EndVertexId == v + 1) || (e.StartVertexId == v + 1 && e.EndVertexId == u + 1));
-                    if (edge != null)
-                    {
-                        edge.Shape.Stroke = Brushes.Blue;
-                        edge.WeightText.Text = (edge.Weight - maxFlowObj.residual[u, v]).ToString();
-                        descriptionText.Text += $"Обновляем ребро ({u + 1}, {v + 1}) с новым остаточным потоком {edge.Weight - maxFlowObj.residual[u, v]}\n";
-                        await Task.Delay(500);
-                    }
-                }
-
-                maxFlow += pathFlow;
-                descriptionText.Text += $"Текущий максимальный поток: {maxFlow}\n";
-            }
-
-            descriptionText.Text += $"Максимальный поток: {maxFlow}\n";
-        }*/
+        }
 
         private async void StartShortestPath()
         {
