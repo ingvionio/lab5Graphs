@@ -263,7 +263,54 @@ namespace Lab5Graphs
         }
 
         // Перетаскивание вершины правой кнопкой
+
         private void Vertex_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_isDragging && _draggedVertex != null)
+            {
+                Point currentPosition = e.GetPosition(GraphCanvas);
+                double offsetX = currentPosition.X - _dragStart.X;
+                double offsetY = currentPosition.Y - _dragStart.Y;
+
+                // Обновляем положение вершины
+                double newLeft = Canvas.GetLeft(_draggedVertex.Container) + offsetX;
+                double newTop = Canvas.GetTop(_draggedVertex.Container) + offsetY;
+                Canvas.SetLeft(_draggedVertex.Container, newLeft);
+                Canvas.SetTop(_draggedVertex.Container, newTop);
+
+                _dragStart = currentPosition;
+
+                // Обновляем рёбра, связанные с этой вершиной
+                foreach (var edge in _graph.Edges)
+                {
+                    if (edge.StartVertexId == _draggedVertex.Id)
+                    {
+                        edge.Shape.X1 = newLeft + 25;
+                        edge.Shape.Y1 = newTop + 25;
+                    }
+                    else if (edge.EndVertexId == _draggedVertex.Id)
+                    {
+                        edge.Shape.X2 = newLeft + 25;
+                        edge.Shape.Y2 = newTop + 25;
+                    }
+
+                    if (edge.WeightText != null)
+                    {
+                        Canvas.SetLeft(edge.WeightText, (edge.Shape.X1 + edge.Shape.X2) / 2 - 10);
+                        Canvas.SetTop(edge.WeightText, (edge.Shape.Y1 + edge.Shape.Y2) / 2 - 10);
+                    }
+
+                    // Обновляем положение стрелок, если ребро направленное
+                    if (edge.IsDirected)
+                    {
+                        RemoveArrowHeads(edge);
+                        DrawArrowHeads(edge, edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                    }
+                }
+            }
+        }
+
+        /*private void Vertex_MouseMove(object sender, MouseEventArgs e)
         {
             if (_isDragging && _draggedVertex != null)
             {
@@ -300,7 +347,7 @@ namespace Lab5Graphs
                     }
                 }
             }
-        }
+        }*/
 
         // Переключение на режим добавления рёбер
         private void AddEdgeButton_Click(object sender, RoutedEventArgs e)
@@ -335,7 +382,7 @@ namespace Lab5Graphs
                     DrawGraph();
                     foreach (var edge in _graph.Edges)
                     {
-                        DrawArrowHeads(edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                        DrawArrowHeads(edge, edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
                     }
                     MessageBox.Show("Graph loaded from " + filePath);
                 }
@@ -421,11 +468,11 @@ namespace Lab5Graphs
 
                     if(edge.IsDirected)
                     {
-                        DrawArrowHeads(edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                        DrawArrowHeads(edge,edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
                     }
                     else
                     {
-                        RemoveArrowHeads(edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                        RemoveArrowHeads(edge);
                         DrawGraph();
                     }
                 };
@@ -570,26 +617,22 @@ namespace Lab5Graphs
 
                 if (edge.IsDirected)
                 {
-                    DrawArrowHeads(edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                    DrawArrowHeads(edge, edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
                 }
             }
 
         }
 
-        private void RemoveArrowHeads(double x1, double y1, double x2, double y2)
+        private void RemoveArrowHeads(Edge edge)
         {
-            // Удаляем стрелочки, если они существуют
-            var linesToRemove = GraphCanvas.Children.OfType<Line>().Where(line =>
-                (Math.Abs(line.X1 - x2) < 1 && Math.Abs(line.Y1 - y2) < 1 && Math.Abs(line.X2 - x1) < 1 && Math.Abs(line.Y2 - y1) < 1) ||
-                (Math.Abs(line.X1 - x1) < 1 && Math.Abs(line.Y1 - y1) < 1 && Math.Abs(line.X2 - x2) < 1 && Math.Abs(line.Y2 - y2) < 1)).ToList();
-
-            foreach (var line in linesToRemove)
+            foreach (var arrowHead in edge.ArrowHeads)
             {
-                GraphCanvas.Children.Remove(line);
+                GraphCanvas.Children.Remove(arrowHead);
             }
+            edge.ArrowHeads.Clear();
         }
 
-        private void DrawArrowHeads(double x1, double y1, double x2, double y2)
+        private void DrawArrowHeads(Edge edge, double x1, double y1, double x2, double y2)
         {
             double angle = Math.Atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
             double arrowLength = 10;
@@ -618,6 +661,12 @@ namespace Lab5Graphs
                 Y2 = arrowPoint2.Y
             };
 
+            // Удаляем старые стрелки, если они существуют
+            RemoveArrowHeads(edge);
+
+            // Добавляем новые стрелки в список и на холст
+            edge.ArrowHeads.Add(arrowLine1);
+            edge.ArrowHeads.Add(arrowLine2);
             GraphCanvas.Children.Add(arrowLine1);
             GraphCanvas.Children.Add(arrowLine2);
         }
@@ -819,6 +868,7 @@ namespace Lab5Graphs
                     path.Push(v);
                     int u = maxFlowObj.parent[v];
                     pathFlow = Math.Min(pathFlow, maxFlowObj.residual[u, v]);
+                    descriptionText.Text += $"Обновляем минимальную пропускную способность на ребре ({u + 1}, {v + 1}) с {maxFlowObj.residual[u, v]}\n";
                     v = u;
                 }
                 path.Push(source);
@@ -1000,7 +1050,7 @@ namespace Lab5Graphs
             {
                 foreach(var edge in _graph.Edges)
                 {
-                    DrawArrowHeads(edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                    DrawArrowHeads(edge, edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
                 }
                 await MaxFlowVisual(0, _graph.Vertices.Count - 1, DescriptionTextBlock, ListBox);
             }

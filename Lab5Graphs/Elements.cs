@@ -24,6 +24,7 @@ namespace Lab5Graphs
         public TextBlock WeightText { get; set; }
         public int Weight { get; set; } = 1;
         public bool IsDirected { get; set; } = false;
+        public List<Line> ArrowHeads { get; set; } = new List<Line>();
     }
 
     public class Graph
