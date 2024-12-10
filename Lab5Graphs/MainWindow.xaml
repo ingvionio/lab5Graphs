@@ -11,7 +11,6 @@
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized">
 
-
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -21,65 +20,85 @@
     </Window.Resources>
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- For top buttons -->
+            <RowDefinition Height="*"/>
+            <!-- For Canvas -->
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="290"/>
         </Grid.ColumnDefinitions>
 
+        <materialDesign:Card Grid.Row="0" Grid.Column="1" Margin="5" Background="#FAFAFA">
+            <TextBlock x:Name="label_text" Text="РЕДАКТОР ГРАФОВ" Margin="5" FontSize="24" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#FF009688" TextAlignment="Center"/>
+        </materialDesign:Card>
 
-        <Canvas x:Name="GraphCanvas" Background="#EEEEEE" MouseLeftButtonDown="Canvas_MouseLeftButtonDown" MouseRightButtonDown="GraphCanvas_MouseRightButtonDown"/>
+        <materialDesign:Card Grid.Row="0" Grid.Column="0" Margin="5" Background="#FAFAFA">
 
-
-        <materialDesign:Card Grid.Column="1"  Margin="5,5,5,5"  Background="#FAFAFA" >
-            <Grid>
+            <!-- Top toolbar (buttons) -->
+            <Grid Grid.Row="0" Grid.Column="0" Margin="5">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="0*"/>
-                    <ColumnDefinition/>
+                    <ColumnDefinition Width="*" />
+                    <!-- Flexible column for left-side buttons -->
+                    <ColumnDefinition Width="Auto" />
+                    <!-- Fixed size for right-side combo and buttons -->
                 </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="2*"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <StackPanel Grid.Row="0" Orientation="Vertical" Margin="5,5,5,5" Grid.ColumnSpan="2">
-                    <Button x:Name="AddEdgeButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Add Edge" Click="AddEdgeButton_Click" Margin="0,5,5,5" Padding="5 5 5 5"/>
-                    <Button x:Name="ClearButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Clear" Click="ClearButton_Click" Margin="0,5,5,5" Padding="5 5 5 5"/>
+                <!-- Left side buttons -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Button x:Name="AddEdgeButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Add Edge" Click="AddEdgeButton_Click" Width="150" Margin="5 5 5 5" Padding="5" FontSize="16"/>
+                    <Button x:Name="ClearButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Clear" Click="ClearButton_Click" Width="150" Margin="5 5 5 5" Padding="5" FontSize="16"/>
                 </StackPanel>
-
-                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5,5,5,5" Grid.ColumnSpan="2">
-                    <ComboBox x:Name="SaveGraphTypeComboBox" materialDesign:HintAssist.Hint="Select graph type to save" Style="{StaticResource MaterialDesignFloatingHintComboBox}" Width="125" Margin="5,5,5,5" SelectedIndex="0">
+                <!-- Right side controls -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <ComboBox x:Name="SaveGraphTypeComboBox" materialDesign:HintAssist.Hint="Select graph type to save" Style="{StaticResource MaterialDesignFloatingHintComboBox}" Width="150" Margin="5,0" SelectedIndex="0" FontSize="16">
                         <ComboBoxItem Content="Normal Graph"/>
                         <ComboBoxItem Content="MST"/>
                         <ComboBoxItem Content="Max Flow"/>
                     </ComboBox>
-                    <Button x:Name="LoadButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Load" Click="LoadButton_Click" Width="64" Margin="0,5,5,5" Padding="5"/>
-                    <Button x:Name="SaveButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Save" Click="SaveButton_Click" Width="64" Margin="0,5,5,5" Padding="5"/>
+                    <Button x:Name="SaveButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Save" Click="SaveButton_Click" Width="80" Margin="5 5 5 5" Padding="5" FontSize="16"/>
+                    <Button x:Name="LoadButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Load" Click="LoadButton_Click" Width="80" Margin="5 5 5 5" Padding="5" FontSize="16"/>
                 </StackPanel>
+            </Grid>
+        </materialDesign:Card>
 
+        <!-- Graph Canvas -->
+        <Canvas x:Name="GraphCanvas" Grid.Row="1" Grid.Column="0" Background="#EEEEEE" MouseLeftButtonDown="Canvas_MouseLeftButtonDown" MouseRightButtonDown="GraphCanvas_MouseRightButtonDown"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
 
-                <GroupBox Grid.Row="2" Header="Algorithm" Margin="5,5,5,5" Style="{DynamicResource MaterialDesignGroupBox}" Grid.ColumnSpan="2">
+        <!-- Side panel with algorithm controls -->
+        <materialDesign:Card Grid.Row="1" Grid.Column="1" Margin="5" Background="#FAFAFA">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <!-- Algorithm selection -->
+                    <RowDefinition Height="2*"/>
+                    <!-- Log -->
+                    <RowDefinition Height="*"/>
+                    <!-- Stack/Queue -->
+                </Grid.RowDefinitions>
+
+                <GroupBox Grid.Row="0" Header="Algorithm" Margin="5" Style="{DynamicResource MaterialDesignGroupBox}">
                     <StackPanel>
-                        <ComboBox x:Name="AlgorithmComboBox" materialDesign:HintAssist.Hint="Select Algorithm" Style="{StaticResource MaterialDesignFloatingHintComboBox}" SelectionChanged="AlgorithmComboBox_SelectionChanged" Margin="5" >
+                        <ComboBox x:Name="AlgorithmComboBox" materialDesign:HintAssist.Hint="Select Algorithm" Style="{StaticResource MaterialDesignFloatingHintComboBox}" SelectionChanged="AlgorithmComboBox_SelectionChanged" Margin="5" FontSize="16">
                             <ComboBoxItem Content="Depth-First Search (DFS)"/>
                             <ComboBoxItem Content="Breadth-First Search (BFS)"/>
                             <ComboBoxItem Content="Minimum Spanning Tree (MST)"/>
                             <ComboBoxItem Content="Maximum Flow"/>
                             <ComboBoxItem Content="Shortest Path"/>
                         </ComboBox>
-                        <Button x:Name="StartAlgorithmButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Start Algorithm" Click="StartAlgorithmButton_Click" Margin="5,5,5,0" Padding="5 5 5 5"/>
+                        <Button x:Name="StartAlgorithmButton" Style="{StaticResource MaterialDesignRaisedButton}" Content="Start Algorithm" Click="StartAlgorithmButton_Click" Margin="5 5 5 5" Padding="5" FontSize="16"/>
                     </StackPanel>
                 </GroupBox>
 
-                <GroupBox Grid.Row="3" Header="Log" Margin="5,5,5,5"  Style="{DynamicResource MaterialDesignGroupBox}" Grid.ColumnSpan="2" >
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" >
+                <GroupBox Grid.Row="1" Header="Log" Margin="5" Style="{DynamicResource MaterialDesignGroupBox}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <TextBlock x:Name="DescriptionTextBlock" TextWrapping="Wrap" FontSize="14"/>
                     </ScrollViewer>
                 </GroupBox>
 
-                <GroupBox Grid.Row="4" Header="Stack/Queue" Margin="5,5,5,5" Style="{DynamicResource MaterialDesignGroupBox}" Grid.ColumnSpan="2">
+                <GroupBox Grid.Row="2" Header="Stack/Queue" Margin="5" Style="{DynamicResource MaterialDesignGroupBox}">
                     <ListBox x:Name="ListBox" FontSize="14"/>
                 </GroupBox>
             </Grid>
