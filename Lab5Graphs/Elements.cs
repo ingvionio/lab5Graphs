@@ -23,6 +23,7 @@ namespace Lab5Graphs
         public Line Shape { get; set; }
         public TextBlock WeightText { get; set; }
         public int Weight { get; set; } = 1;
+        public bool IsDirected { get; set; } = false;
     }
 
     public class Graph
@@ -287,7 +288,8 @@ namespace Lab5Graphs
                             {
                                 StartVertexId = i + 1,
                                 EndVertexId = j + 1,
-                                Weight = weight
+                                Weight = weight,
+                                IsDirected = true
                             });
                         }
                     }

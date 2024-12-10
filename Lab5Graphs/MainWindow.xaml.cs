@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.IO;
 using Microsoft.Win32;
+using QuickGraph;
 
 
 namespace Lab5Graphs
@@ -332,6 +333,10 @@ namespace Lab5Graphs
                 {
                     _graph.ReadCapacityMatrixFromFile(filePath);
                     DrawGraph();
+                    foreach (var edge in _graph.Edges)
+                    {
+                        DrawArrowHeads(edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                    }
                     MessageBox.Show("Graph loaded from " + filePath);
                 }
                 else
@@ -393,7 +398,11 @@ namespace Lab5Graphs
                 // Создаем контекстное меню
                 ContextMenu contextMenu = new ContextMenu();
                 MenuItem changeWeightItem = new MenuItem { Header = "Change Weight" };
+                MenuItem directedItem = new MenuItem { Header = "Directed" };
+                directedItem.IsCheckable = true;
+                directedItem.IsChecked = edge.IsDirected;
                 contextMenu.Items.Add(changeWeightItem);
+                contextMenu.Items.Add(directedItem);
 
                 // Обработчик события выбора пункта меню
                 changeWeightItem.Click += (s, ea) =>
@@ -403,6 +412,21 @@ namespace Lab5Graphs
                     {
                         edge.Weight = newWeight;
                         edge.WeightText.Text = newWeight.ToString();
+                    }
+                };
+
+                directedItem.Click += (s, ea) =>
+                {
+                    edge.IsDirected = directedItem.IsChecked;
+
+                    if(edge.IsDirected)
+                    {
+                        DrawArrowHeads(edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                    }
+                    else
+                    {
+                        RemoveArrowHeads(edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                        DrawGraph();
                     }
                 };
 
@@ -543,8 +567,59 @@ namespace Lab5Graphs
                     GraphCanvas.Children.Add(edge.Shape);
                 if (!GraphCanvas.Children.Contains(edge.WeightText))
                     GraphCanvas.Children.Add(edge.WeightText);
+
+                if (edge.IsDirected)
+                {
+                    DrawArrowHeads(edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                }
             }
 
+        }
+
+        private void RemoveArrowHeads(double x1, double y1, double x2, double y2)
+        {
+            // Удаляем стрелочки, если они существуют
+            var linesToRemove = GraphCanvas.Children.OfType<Line>().Where(line =>
+                (Math.Abs(line.X1 - x2) < 1 && Math.Abs(line.Y1 - y2) < 1 && Math.Abs(line.X2 - x1) < 1 && Math.Abs(line.Y2 - y1) < 1) ||
+                (Math.Abs(line.X1 - x1) < 1 && Math.Abs(line.Y1 - y1) < 1 && Math.Abs(line.X2 - x2) < 1 && Math.Abs(line.Y2 - y2) < 1)).ToList();
+
+            foreach (var line in linesToRemove)
+            {
+                GraphCanvas.Children.Remove(line);
+            }
+        }
+
+        private void DrawArrowHeads(double x1, double y1, double x2, double y2)
+        {
+            double angle = Math.Atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+            double arrowLength = 10;
+            double arrowWidth = 5;
+
+            Point arrowPoint1 = new Point(x2 - arrowLength * Math.Cos((angle - 30) * Math.PI / 180), y2 - arrowLength * Math.Sin((angle - 30) * Math.PI / 180));
+            Point arrowPoint2 = new Point(x2 - arrowLength * Math.Cos((angle + 30) * Math.PI / 180), y2 - arrowLength * Math.Sin((angle + 30) * Math.PI / 180));
+
+            Line arrowLine1 = new Line
+            {
+                Stroke = Brushes.Black,
+                StrokeThickness = 2,
+                X1 = x2,
+                Y1 = y2,
+                X2 = arrowPoint1.X,
+                Y2 = arrowPoint1.Y
+            };
+
+            Line arrowLine2 = new Line
+            {
+                Stroke = Brushes.Black,
+                StrokeThickness = 2,
+                X1 = x2,
+                Y1 = y2,
+                X2 = arrowPoint2.X,
+                Y2 = arrowPoint2.Y
+            };
+
+            GraphCanvas.Children.Add(arrowLine1);
+            GraphCanvas.Children.Add(arrowLine2);
         }
 
         private Point GetEdgePoint(Point center, Point target, double radius)
@@ -776,32 +851,6 @@ namespace Lab5Graphs
             descriptionText.Text += $"Максимальный поток: {maxFlow}\n";
         }
 
-        private void ConvertEdgesToArrows()
-        {
-            foreach (var edge in _graph.Edges)
-            {
-                // Удаление старой линии
-                GraphCanvas.Children.Remove(edge.Shape);
-
-                // Создание новой стрелочки
-                Line arrow = new Line
-                {
-                    Stroke = Brushes.Black,
-                    StrokeThickness = 2,
-                    X1 = edge.Shape.X1,
-                    Y1 = edge.Shape.Y1,
-                    X2 = edge.Shape.X2,
-                    Y2 = edge.Shape.Y2
-                };
-
-                // Добавление стрелочки на холст
-                GraphCanvas.Children.Add(arrow);
-
-                // Обновление объекта Edge
-                edge.Shape = arrow;
-            }
-        }
-
         private async void StartShortestPath()
         {
             if (_startVertexForPath == null || _endVertexForPath == null)
@@ -949,6 +998,10 @@ namespace Lab5Graphs
             }
             else if (selectedAlgorithm == "Maximum Flow")
             {
+                foreach(var edge in _graph.Edges)
+                {
+                    DrawArrowHeads(edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                }
                 await MaxFlowVisual(0, _graph.Vertices.Count - 1, DescriptionTextBlock, ListBox);
             }
             else if (selectedAlgorithm == "Shortest Path")
