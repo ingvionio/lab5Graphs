@@ -283,28 +283,32 @@ namespace Lab5Graphs
                 // Обновляем рёбра, связанные с этой вершиной
                 foreach (var edge in _graph.Edges)
                 {
-                    if (edge.StartVertexId == _draggedVertex.Id)
-                    {
-                        edge.Shape.X1 = newLeft + 25;
-                        edge.Shape.Y1 = newTop + 25;
-                    }
-                    else if (edge.EndVertexId == _draggedVertex.Id)
-                    {
-                        edge.Shape.X2 = newLeft + 25;
-                        edge.Shape.Y2 = newTop + 25;
-                    }
+                    Vertex startVertex = _graph.Vertices.FirstOrDefault(v => v.Id == edge.StartVertexId);
+                    Vertex endVertex = _graph.Vertices.FirstOrDefault(v => v.Id == edge.EndVertexId);
 
-                    if (edge.WeightText != null)
+                    if (startVertex != null && endVertex != null)
                     {
-                        Canvas.SetLeft(edge.WeightText, (edge.Shape.X1 + edge.Shape.X2) / 2 - 10);
-                        Canvas.SetTop(edge.WeightText, (edge.Shape.Y1 + edge.Shape.Y2) / 2 - 10);
-                    }
+                        Point startCenter = new Point(Canvas.GetLeft(startVertex.Container) + 25, Canvas.GetTop(startVertex.Container) + 25);
+                        Point endCenter = new Point(Canvas.GetLeft(endVertex.Container) + 25, Canvas.GetTop(endVertex.Container) + 25);
+                        Point startEdge = GetEdgePoint(startCenter, endCenter, 25);
+                        Point endEdge = GetEdgePoint(endCenter, startCenter, 25);
 
-                    // Обновляем положение стрелок, если ребро направленное
-                    if (edge.IsDirected)
-                    {
-                        RemoveArrowHeads(edge);
-                        DrawArrowHeads(edge, edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                        edge.Shape.X1 = startEdge.X;
+                        edge.Shape.Y1 = startEdge.Y;
+                        edge.Shape.X2 = endEdge.X;
+                        edge.Shape.Y2 = endEdge.Y;
+
+                        if (edge.WeightText != null)
+                        {
+                            Canvas.SetLeft(edge.WeightText, (edge.Shape.X1 + edge.Shape.X2) / 2 - 10);
+                            Canvas.SetTop(edge.WeightText, (edge.Shape.Y1 + edge.Shape.Y2) / 2 - 10);
+                        }
+
+                        if (edge.IsDirected)
+                        {
+                            RemoveArrowHeads(edge);
+                            DrawArrowHeads(edge, edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                        }
                     }
                 }
             }
@@ -625,18 +629,27 @@ namespace Lab5Graphs
 
         private void RemoveArrowHeads(Edge edge)
         {
-            foreach (var arrowHead in edge.ArrowHeads)
+            if (edge.ArrowHeads != null) // Check if ArrowHeads list is initialized
             {
-                GraphCanvas.Children.Remove(arrowHead);
+                foreach (var arrowHead in edge.ArrowHeads.ToList()) // Create a copy to avoid modification during enumeration
+                {
+
+                    if (arrowHead != null && GraphCanvas.Children.Contains(arrowHead))
+                    {
+
+                        GraphCanvas.Children.Remove(arrowHead);
+                    }
+                }
+                edge.ArrowHeads.Clear();
             }
-            edge.ArrowHeads.Clear();
+
         }
 
         private void DrawArrowHeads(Edge edge, double x1, double y1, double x2, double y2)
         {
             double angle = Math.Atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
             double arrowLength = 10;
-            double arrowWidth = 5;
+
 
             Point arrowPoint1 = new Point(x2 - arrowLength * Math.Cos((angle - 30) * Math.PI / 180), y2 - arrowLength * Math.Sin((angle - 30) * Math.PI / 180));
             Point arrowPoint2 = new Point(x2 - arrowLength * Math.Cos((angle + 30) * Math.PI / 180), y2 - arrowLength * Math.Sin((angle + 30) * Math.PI / 180));
@@ -661,14 +674,24 @@ namespace Lab5Graphs
                 Y2 = arrowPoint2.Y
             };
 
-            // Удаляем старые стрелки, если они существуют
-            RemoveArrowHeads(edge);
 
-            // Добавляем новые стрелки в список и на холст
+            if (edge.ArrowHeads == null)
+            {
+                edge.ArrowHeads = new List<Line>();
+            }
+            else
+            {
+
+                RemoveArrowHeads(edge); // Remove any existing arrowheads
+            }
+
+
+
             edge.ArrowHeads.Add(arrowLine1);
             edge.ArrowHeads.Add(arrowLine2);
             GraphCanvas.Children.Add(arrowLine1);
             GraphCanvas.Children.Add(arrowLine2);
+
         }
 
         private Point GetEdgePoint(Point center, Point target, double radius)
