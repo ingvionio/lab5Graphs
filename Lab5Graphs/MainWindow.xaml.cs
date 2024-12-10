@@ -879,6 +879,9 @@ namespace Lab5Graphs
 
             int maxFlow = 0;
 
+            // Сохраняем исходные веса ребер
+            var originalWeights = _graph.Edges.ToDictionary(edge => edge, edge => edge.Weight);
+
             while (maxFlowObj.BFS(source, sink))
             {
                 int pathFlow = int.MaxValue;
@@ -891,7 +894,6 @@ namespace Lab5Graphs
                     path.Push(v);
                     int u = maxFlowObj.parent[v];
                     pathFlow = Math.Min(pathFlow, maxFlowObj.residual[u, v]);
-                    descriptionText.Text += $"Обновляем минимальную пропускную способность на ребре ({u + 1}, {v + 1}) с {maxFlowObj.residual[u, v]}\n";
                     v = u;
                 }
                 path.Push(source);
@@ -910,10 +912,12 @@ namespace Lab5Graphs
                     var edge = _graph.Edges.FirstOrDefault(e => (e.StartVertexId == u + 1 && e.EndVertexId == w + 1) || (e.StartVertexId == w + 1 && e.EndVertexId == u + 1));
                     if (edge != null)
                     {
+                        int currentFlow = edge.Weight - maxFlowObj.residual[u, w];
+                        edge.WeightText.Text = $"{edge.Weight}/{currentFlow}";
                         edge.Shape.Stroke = Brushes.Blue;
-                        edge.WeightText.Text = (edge.Weight - maxFlowObj.residual[u, w]).ToString();
                         descriptionText.Text += $"Обновляем ребро ({u + 1}, {w + 1}) с новым остаточным потоком {edge.Weight - maxFlowObj.residual[u, w]}\n";
-                        await Task.Delay(500);
+                        descriptionText.Text += $"Текущий поток на ребре ({u + 1}, {w + 1}) увеличивается на {pathFlow}, остаточный поток уменьшается на {pathFlow}.\n";
+                        await Task.Delay(2000);
                     }
                 }
 
@@ -922,6 +926,17 @@ namespace Lab5Graphs
             }
 
             descriptionText.Text += $"Максимальный поток: {maxFlow}\n";
+            descriptionText.Text += $"Алгоритм завершен. Максимальный поток в сети равен {maxFlow}.\n";
+            descriptionText.Text += $"Остаточные пропускные способности на ребрах обновлены, и все возможные увеличивающие пути исчерпаны.\n";
+
+            await Task.Delay(1000);
+
+            // Восстанавливаем исходные веса ребер
+            foreach (var edge in _graph.Edges)
+            {
+                edge.Weight = originalWeights[edge];
+                edge.WeightText.Text = edge.Weight.ToString();
+            }
         }
 
         private async void StartShortestPath()
