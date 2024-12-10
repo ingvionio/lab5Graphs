@@ -420,9 +420,9 @@ namespace Lab5Graphs
                     _graph.SaveMSTToFile(filePath, _mstEdges); // Save MST to file
 
                 }
-                else if(selectedGraphType == "Max Flow")
+                else if (selectedGraphType == "Max Flow")
                 {
-                    if(_graph.Edges == null)
+                    if (_graph.Edges == null)
                     {
                         MessageBox.Show("Сначала постройте граф.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
@@ -470,9 +470,9 @@ namespace Lab5Graphs
                 {
                     edge.IsDirected = directedItem.IsChecked;
 
-                    if(edge.IsDirected)
+                    if (edge.IsDirected)
                     {
-                        DrawArrowHeads(edge,edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
+                        DrawArrowHeads(edge, edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
                     }
                     else
                     {
@@ -1086,7 +1086,7 @@ namespace Lab5Graphs
             }
             else if (selectedAlgorithm == "Maximum Flow")
             {
-                foreach(var edge in _graph.Edges)
+                foreach (var edge in _graph.Edges)
                 {
                     DrawArrowHeads(edge, edge.Shape.X1, edge.Shape.Y1, edge.Shape.X2, edge.Shape.Y2);
                 }
@@ -1191,7 +1191,7 @@ namespace Lab5Graphs
         private void AlgorithmComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             //Clear log when algorithm changes
-            
+
             ResetGraphVisualization();
 
             string selectedAlgorithm = (string)(AlgorithmComboBox.SelectedItem as ComboBoxItem)?.Content;
