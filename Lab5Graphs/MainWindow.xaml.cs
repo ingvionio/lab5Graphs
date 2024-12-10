@@ -11,6 +11,7 @@ namespace Lab5Graphs
 {
     public partial class MainWindow : Window
     {
+        private List<Edge> _mstEdges;
         private Vertex _startVertexForPath; // Стартовая вершина для кратчайшего пути
         private Vertex _endVertexForPath;   // Конечная вершина для кратчайшего пути
         private bool _isSelectingShortestPath = false; // Режим выбора вершин
@@ -334,14 +335,32 @@ namespace Lab5Graphs
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
+            string selectedGraphType = (string)(SaveGraphTypeComboBox.SelectedItem as ComboBoxItem)?.Content;
             SaveFileDialog saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*"; // Set file filter
+            saveFileDialog.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
 
-            if (saveFileDialog.ShowDialog() == true) // Show dialog and check if OK was clicked
+
+            if (saveFileDialog.ShowDialog() == true)
             {
                 string filePath = saveFileDialog.FileName;
-                _graph.WriteAdjacencyMatrixToFile(filePath);
-                MessageBox.Show("Graph saved to " + filePath);
+
+                if (selectedGraphType == "MST")
+                {
+                    if (_mstEdges == null)
+                    {
+                        MessageBox.Show("Пожалуйста, сначала постройте минимальное остовное дерево.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                    _graph.SaveMSTToFile(filePath, _mstEdges); // Save MST to file
+
+                }
+                else
+                {
+                    _graph.WriteAdjacencyMatrixToFile(filePath); // Save normal graph
+
+                }
+
+                MessageBox.Show("Граф сохранен в " + filePath);
             }
         }
 
@@ -952,12 +971,13 @@ namespace Lab5Graphs
             descriptionText.Text += "Остовное дерево — это подграф, включающий все вершины исходного графа и являющийся деревом (т.е. не содержит циклов). \n";
             descriptionText.Text += "Минимальное остовное дерево имеет наименьший суммарный вес ребер среди всех возможных остовных деревьев.\n\n";
 
+            _mstEdges = _graph.FindMinimumSpanningTree(); // Store MST edges
 
-            List<Edge> mstEdges = _graph.FindMinimumSpanningTree();
 
-            if (mstEdges.Count < _graph.Vertices.Count - 1 && _graph.Vertices.Count > 0)
+            if (_mstEdges.Count < _graph.Vertices.Count - 1 && _graph.Vertices.Count > 0)
             {
                 descriptionText.Text += "Граф несвязный! Невозможно построить остовное дерево.\n";
+                _mstEdges = null; // Clear _mstEdges if graph is disconnected
                 return;
             }
 
@@ -969,6 +989,13 @@ namespace Lab5Graphs
             await Task.Delay(500);
 
             int stepCounter = 2;
+
+            foreach (var edge in _graph.Edges)
+            {
+                edge.Shape.Stroke = Brushes.Black; // Сбрасываем цвет ребра перед началом алгоритма
+            }
+
+
             while (visitedVertices.Count < _graph.Vertices.Count)
             {
                 Edge minEdge = null;
@@ -1000,12 +1027,11 @@ namespace Lab5Graphs
                 }
                 else
                 {
-
-                    break; // Exit if no minEdge is found (for disconnected graphs)
+                    break; // Выход, если граф несвязный
                 }
             }
 
-            descriptionText.Text += $"Минимальное остовное дерево построено (всего {mstEdges.Count} ребер).\n";
+            descriptionText.Text += $"Минимальное остовное дерево построено (всего {_mstEdges.Count} ребер).\n";
         }
 
         private void ResetGraphVisualization()

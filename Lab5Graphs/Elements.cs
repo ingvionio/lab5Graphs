@@ -185,6 +185,35 @@ namespace Lab5Graphs
             return mst;
         }
 
+        public void SaveMSTToFile(string filePath, List<Edge> mstEdges)
+        {
+            int n = Vertices.Count;
+            int[,] adjacencyMatrix = new int[n, n];
+
+
+            foreach (var edge in mstEdges) // Use mstEdges instead of all edges
+            {
+                int startIndex = edge.StartVertexId - 1;
+                int endIndex = edge.EndVertexId - 1;
+                int weight = edge.Weight;
+
+
+                adjacencyMatrix[startIndex, endIndex] = weight;
+                adjacencyMatrix[endIndex, startIndex] = weight;
+            }
+
+            using (StreamWriter writer = new StreamWriter(filePath))
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    for (int j = 0; j < n; j++)
+                    {
+                        writer.Write(adjacencyMatrix[i, j] + (j == n - 1 ? "" : " "));
+                    }
+                    writer.WriteLine();
+                }
+            }
+        }
 
         private Canvas FindVertexContainerById(int vertexId)
         {
