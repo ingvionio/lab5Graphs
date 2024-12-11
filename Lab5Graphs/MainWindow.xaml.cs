@@ -15,7 +15,7 @@ namespace Lab5Graphs
         private List<Edge> _mstEdges;
         private Vertex _startVertexForPath; // Стартовая вершина для кратчайшего пути
         private Vertex _endVertexForPath;   // Конечная вершина для кратчайшего пути
-        private bool _isSelectingShortestPath = false; // Режим выбора вершин
+        private bool _isSelectingVertex = false;        // Режим выбора вершин
 
         private readonly Graph _graph = new Graph();
         private bool _isAddingEdge = false;
@@ -35,6 +35,7 @@ namespace Lab5Graphs
         {
             if (_isAddingEdge) return;
 
+            if (_isSelectingVertex) return;
             // Получаем позицию щелчка
             Point position = e.GetPosition(GraphCanvas);
 
@@ -136,25 +137,7 @@ namespace Lab5Graphs
 
             var clickedVertex = _graph.Vertices.Find(v => v.Container == sender as Canvas);
 
-            if (_isSelectingShortestPath)
-            {
-                if (_startVertexForPath == null)
-                {
-                    _startVertexForPath = clickedVertex;
-                    _startVertexForPath.Shape.Fill = Brushes.LightGreen; // Выделяем начальную вершину
-                    DescriptionTextBlock.Text = $"Начальная вершина выбрана: {_startVertexForPath.Text.Text}. Теперь выберите конечную вершину.";
-                }
-                else if (_endVertexForPath == null)
-                {
-                    _endVertexForPath = clickedVertex;
-                    _endVertexForPath.Shape.Fill = Brushes.LightCoral; // Выделяем конечную вершину
-                    DescriptionTextBlock.Text = $"Конечная вершина выбрана: {_endVertexForPath.Text.Text}. Запускаем поиск...";
-
-                    // Запускаем алгоритм поиска кратчайшего пути
-                    StartShortestPath();
-                }
-                return;
-            }
+           
 
             if (_selectedVertex == null)
             {
@@ -941,21 +924,88 @@ namespace Lab5Graphs
 
         private async void StartShortestPath()
         {
-            if (_startVertexForPath == null || _endVertexForPath == null)
+            try
             {
-                MessageBox.Show("Выберите начальную и конечную вершины.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
+                // Выбираем начальную и конечную вершины
+                var (startVertex, endVertex) = await SelectVertices("Выберите начальную и конечную вершины для кратчайшего пути.");
+
+                if (startVertex == null || endVertex == null)
+                {
+                    MessageBox.Show("Выбор вершин не завершён.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Запускаем визуализацию поиска пути
+                await ShortestPathVisual(startVertex.Id, endVertex.Id, DescriptionTextBlock, ListBox);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Произошла ошибка: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+        private async Task<(Vertex startVertex, Vertex endVertex)> SelectVertices(string message)
+        {
+            // Устанавливаем флаг выбора вершин
+            _isSelectingVertex = true;
+            DescriptionTextBlock.Text = message;
+
+            TaskCompletionSource<(Vertex startVertex, Vertex endVertex)> vertexSelectionTask = new TaskCompletionSource<(Vertex startVertex, Vertex endVertex)>();
+            Vertex firstSelectedVertex = null;
+
+            // Отключаем обработчик создания вершин
+            GraphCanvas.MouseLeftButtonDown -= Canvas_MouseLeftButtonDown;
+
+            MouseButtonEventHandler onVertexClick = null;
+            onVertexClick = (s, e) =>
+            {
+                var clickedVertex = _graph.Vertices.FirstOrDefault(v => v.Container == s as Canvas);
+                if (clickedVertex != null)
+                {
+                    if (firstSelectedVertex == null)
+                    {
+                        // Сохраняем начальную вершину
+                        firstSelectedVertex = clickedVertex;
+                        firstSelectedVertex.Shape.Fill = Brushes.LightGreen; // Подсвечиваем выбранную вершину заливкой
+                        DescriptionTextBlock.Text = "Начальная вершина выбрана. Теперь выберите конечную вершину.";
+                    }
+                    else
+                    {
+                        // Сохраняем конечную вершину
+                        var secondSelectedVertex = clickedVertex;
+                        secondSelectedVertex.Shape.Fill = Brushes.LightCoral; // Подсвечиваем выбранную вершину заливкой
+
+                        // Убираем обработчики
+                        foreach (var vertex in _graph.Vertices)
+                        {
+                            vertex.Container.MouseLeftButtonDown -= onVertexClick;
+                        }
+
+                        // Завершаем выбор
+                        _isSelectingVertex = false;
+                        vertexSelectionTask.SetResult((firstSelectedVertex, secondSelectedVertex));
+                    }
+                }
+            };
+
+            // Добавляем обработчики кликов на вершины
+            foreach (var vertex in _graph.Vertices)
+            {
+                vertex.Container.MouseLeftButtonDown += onVertexClick;
             }
 
-            int startVertexId = _startVertexForPath.Id;
-            int endVertexId = _endVertexForPath.Id;
+            // Ждём завершения выбора
+            var result = await vertexSelectionTask.Task;
 
-            await ShortestPathVisual(startVertexId, endVertexId, DescriptionTextBlock, ListBox);
+            // Включаем обработчик создания вершин обратно
+            GraphCanvas.MouseLeftButtonDown += Canvas_MouseLeftButtonDown;
 
-            // Сброс режима выбора
-            _isSelectingShortestPath = false;
-            _startVertexForPath = null;
-            _endVertexForPath = null;
+            // Сбрасываем флаг выбора и очищаем текст
+            _isSelectingVertex = false;
+            DescriptionTextBlock.Text = "";
+
+            return result;
         }
 
         private async Task ShortestPathVisual(int startVertexId, int endVertexId, TextBlock descriptionText, ListBox listBox)
@@ -1197,13 +1247,13 @@ namespace Lab5Graphs
             string selectedAlgorithm = (string)(AlgorithmComboBox.SelectedItem as ComboBoxItem)?.Content;
             if (selectedAlgorithm == "Shortest Path")
             {
-                _isSelectingShortestPath = true;
+                _isSelectingVertex = true;
                 DescriptionTextBlock.Text = "Выберите начальную и конечную вершины для поиска кратчайшего пути.";
             }
             else
             {
                 DescriptionTextBlock.Text = "";
-                _isSelectingShortestPath = false;
+                _isSelectingVertex = false;
                 _startVertexForPath = null;
                 _endVertexForPath = null;
             }
